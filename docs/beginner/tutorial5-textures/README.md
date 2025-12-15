@@ -1,16 +1,16 @@
-# Textures and bind groups
+# Texturas y grupos de enlace
 
-Up to this point, we have been drawing super simple shapes. While we can make a game with just triangles, trying to draw highly detailed objects would massively limit what devices could even run our game. However, we can get around this problem with **textures**.
+Hasta ahora, hemos estado dibujando formas muy simples. Si bien podemos hacer un juego solo con triángulos, intentar dibujar objetos altamente detallados limitaría masivamente qué dispositivos podrían ejecutar nuestro juego. Sin embargo, podemos evitar este problema con **texturas**.
 
-Textures are images overlaid on a triangle mesh to make it seem more detailed. There are multiple types of textures, such as normal maps, bump maps, specular maps, and diffuse maps. We're going to talk about diffuse maps or, more simply, the color texture.
+Las texturas son imágenes superpuestas en una malla de triángulos para que parezca más detallada. Hay varios tipos de texturas, como mapas normales, mapas de relieve, mapas especulares y mapas difusos. Vamos a hablar de mapas difusos o, más simplemente, la textura de color.
 
-## Loading an image from a file
+## Cargando una imagen desde un archivo
 
-If we want to map an image to our mesh, we first need an image. Let's use this happy little tree:
+Si queremos mapear una imagen a nuestra malla, primero necesitamos una imagen. Usemos este pequeño árbol feliz:
 
 ![a happy tree](./happy-tree.png)
 
-We'll use the [image crate](https://docs.rs/image) to load our tree. Let's add it to our dependencies:
+Usaremos el [crate de image](https://docs.rs/image) para cargar nuestro árbol. Agreguémoslo a nuestras dependencias:
 
 ```toml
 [dependencies.image]
@@ -19,15 +19,15 @@ default-features = false
 features = ["png", "jpeg"]
 ```
 
-The jpeg decoder that `image` includes uses [rayon](https://docs.rs/rayon) to speed up the decoding with threads. WASM doesn't support threads currently, so we need to disable this so our code won't crash when we try to load a jpeg on the web.
+El decodificador de jpeg que incluye `image` usa [rayon](https://docs.rs/rayon) para acelerar la decodificación con hilos. WASM no admite hilos actualmente, así que necesitamos deshabilitarlo para que nuestro código no se bloquee cuando intentemos cargar un jpeg en la web.
 
 <div class="note">
 
-Decoding jpegs in WASM isn't very performant. If you want to speed up image loading in general in WASM, you could opt to use the browser's built-in decoders instead of `image` when building with `wasm-bindgen`. This will involve creating an `<img>` tag in Rust to get the image and then a `<canvas>` to get the pixel data, but I'll leave this as an exercise for the reader.
+Decodificar jpgs en WASM no es muy eficiente. Si deseas acelerar la carga de imágenes en general en WASM, podrías optar por usar los decodificadores integrados del navegador en lugar de `image` al compilar con `wasm-bindgen`. Esto implicará crear una etiqueta `<img>` en Rust para obtener la imagen y luego un `<canvas>` para obtener los datos de píxeles, pero dejaré esto como un ejercicio para el lector.
 
 </div>
 
-In `State`'s `new()` method, add the following just after declaring the `config`:
+En el método `new()` de `State`, agrega lo siguiente justo después de declarar `config`:
 
 ```rust
 let config = wgpu::SurfaceConfiguration {
@@ -50,9 +50,9 @@ use image::GenericImageView;
 let dimensions = diffuse_image.dimensions();
 ```
 
-Here, we grab the bytes from our image file and load them into an image, which is then converted into a `Vec` of RGBA bytes. We also save the image's dimensions for when we create the actual `Texture`.
+Aquí, obtenemos los bytes del archivo de imagen y los cargamos en una imagen, que luego se convierte en un `Vec` de bytes RGBA. También guardamos las dimensiones de la imagen para cuando creemos la `Texture` real.
 
-Now, let's create the `Texture`:
+Ahora, creemos la `Texture`:
 
 ```rust
 let texture_size = wgpu::Extent3d {
@@ -86,9 +86,9 @@ let diffuse_texture = device.create_texture(
 );
 ```
 
-## Getting data into a Texture
+## Cargando datos en una Textura
 
-The `Texture` struct has no methods to interact with the data directly. However, we can use a method on the `queue` we created earlier called `write_texture` to load in the texture. Let's take a look at how we do that:
+La estructura `Texture` no tiene métodos para interactuar con los datos directamente. Sin embargo, podemos usar un método en la `queue` que creamos anteriormente llamado `write_texture` para cargar la textura. Veamos cómo lo hacemos:
 
 ```rust
 queue.write_texture(
@@ -113,7 +113,7 @@ queue.write_texture(
 
 <div class="note">
 
-The old way of writing data to a texture was to copy the pixel data to a buffer and then copy it to the texture. Using `write_texture` is a bit more efficient as it uses one buffer less - I'll leave it here, though, in case you need it.
+La forma antigua de escribir datos en una textura era copiar los datos de píxeles a un búfer y luego copiarlo a la textura. Usar `write_texture` es un poco más eficiente ya que usa un búfer menos - Lo dejaré aquí de todas formas, en caso de que lo necesites.
 
 ```rust
 let buffer = device.create_buffer_init(
@@ -147,15 +147,15 @@ encoder.copy_buffer_to_texture(
 queue.submit(std::iter::once(encoder.finish()));
 ```
 
-The `bytes_per_row` field needs some consideration. This value needs to be a multiple of 256. Check out [the gif tutorial](../../showcase/gifs/#how-do-we-make-the-frames) for more details.
+El campo `bytes_per_row` necesita consideración. Este valor debe ser un múltiplo de 256. Echa un vistazo a [el tutorial de gif](../../showcase/gifs/#how-do-we-make-the-frames) para más detalles.
 
 </div>
 
-## TextureViews and Samplers
+## Vistas de Textura y Muestreadores
 
-Now that our texture has data in it, we need a way to use it. This is where a `TextureView` and a `Sampler` come in. A `TextureView` offers us a *view* into our texture. A `Sampler` controls how the `Texture` is *sampled*. Sampling works similar to the eyedropper tool in GIMP/Photoshop. Our program supplies a coordinate on the texture (known as a *texture coordinate*), and the sampler then returns the corresponding color based on the texture and some internal parameters.
+Ahora que nuestra textura tiene datos en ella, necesitamos una forma de usarla. Aquí es donde entra en juego un `TextureView` y un `Sampler`. Un `TextureView` nos ofrece una *vista* en nuestra textura. Un `Sampler` controla cómo se *muestrea* la `Texture`. El muestreo funciona similar a la herramienta cuentagotas en GIMP/Photoshop. Nuestro programa proporciona una coordenada en la textura (conocida como *coordenada de textura*), y luego el muestreador devuelve el color correspondiente basado en la textura y algunos parámetros internos.
 
-Let's define our `diffuse_texture_view` and `diffuse_sampler` now:
+Definamos ahora nuestro `diffuse_texture_view` y `diffuse_sampler`:
 
 ```rust
 // We don't need to configure the texture view much, so let's
@@ -172,29 +172,29 @@ let diffuse_sampler = device.create_sampler(&wgpu::SamplerDescriptor {
 });
 ```
 
-The `address_mode_*` parameters determine what to do if the sampler gets a texture coordinate that's outside the texture itself. We have a few options to choose from:
+Los parámetros `address_mode_*` determinan qué hacer si el muestreador obtiene una coordenada de textura fuera de la textura misma. Tenemos algunas opciones para elegir:
 
-* `ClampToEdge`: Any texture coordinates outside the texture will return the color of the nearest pixel on the edges of the texture.
-* `Repeat`: The texture will repeat as texture coordinates exceed the texture's dimensions.
-* `MirrorRepeat`: Similar to `Repeat`, but the image will flip when going over boundaries.
+* `ClampToEdge`: Cualquier coordenada de textura fuera de la textura devolverá el color del píxel más cercano en los bordes de la textura.
+* `Repeat`: La textura se repetirá cuando las coordenadas de textura excedan las dimensiones de la textura.
+* `MirrorRepeat`: Similar a `Repeat`, pero la imagen se volteará cuando cruze límites.
 
 ![address_mode.png](./address_mode.png)
 
-The `mag_filter` and `min_filter` fields describe what to do when the sample footprint is smaller or larger than one texel. These two fields usually work when the mapping in the scene is far from or close to the camera.
+Los campos `mag_filter` y `min_filter` describen qué hacer cuando la huella de muestra es menor o mayor que un texel. Estos dos campos generalmente funcionan cuando el mapeo en la escena está lejos o cerca de la cámara.
 
-There are two options:
-* `Linear`: Select two texels in each dimension and return a linear interpolation between their values.
-* `Nearest`: Return the texel value nearest to the texture coordinates. This creates an image that's crisper from far away but pixelated up close. This can be desirable, however, if your textures are designed to be pixelated, like in pixel art games or voxel games like Minecraft.
+Hay dos opciones:
+* `Linear`: Selecciona dos texels en cada dimensión y devuelve una interpolación lineal entre sus valores.
+* `Nearest`: Devuelve el valor del texel más cercano a las coordenadas de textura. Esto crea una imagen que se ve más nítida desde lejos pero pixelada de cerca. Sin embargo, esto puede ser deseable si tus texturas están diseñadas para ser pixeladas, como en juegos de arte de píxeles o juegos de vóxeles como Minecraft.
 
-Mipmaps are a complex topic and will require their own section in the future. For now, we can say that `mipmap_filter` functions are similar to `(mag/min)_filter` as it tells the sampler how to blend between mipmaps.
+Los mipmaps son un tema complejo y requerirán su propia sección en el futuro. Por ahora, podemos decir que las funciones `mipmap_filter` son similares a `(mag/min)_filter` ya que indica al muestreador cómo mezclar entre mipmaps.
 
-I'm using some defaults for the other fields. If you want to see what they are, check [the wgpu docs](https://docs.rs/wgpu/latest/wgpu/type.SamplerDescriptor.html).
+Estoy usando algunos valores predeterminados para los otros campos. Si deseas ver cuáles son, consulta [la documentación de wgpu](https://docs.rs/wgpu/latest/wgpu/type.SamplerDescriptor.html).
 
-All these different resources are nice and all, but they don't do us much good if we can't plug them in anywhere. This is where `BindGroup`s and `PipelineLayout`s come in.
+Todos estos recursos diferentes están bien, pero no nos sirven de mucho si no podemos conectarlos en ningún lado. Aquí es donde entran en juego los `BindGroup`s y los `PipelineLayout`s.
 
-## The BindGroup
+## El BindGroup
 
-A `BindGroup` describes a set of resources and how they can be accessed by a shader. We create a `BindGroup` using a `BindGroupLayout`. Let's make one of those first.
+Un `BindGroup` describe un conjunto de recursos y cómo pueden ser accedidos por un sombreador. Creamos un `BindGroup` usando un `BindGroupLayout`. Primero, creemos uno de esos.
 
 ```rust
 let texture_bind_group_layout =
@@ -223,9 +223,9 @@ let texture_bind_group_layout =
             });
 ```
 
-Our `texture_bind_group_layout` has two entries: one for a sampled texture at binding 0 and one for a sampler at binding 1. Both of these bindings are visible only to the fragment shader as specified by `FRAGMENT`. The possible values for this field are any bitwise combination of `NONE`, `VERTEX`, `FRAGMENT`, or `COMPUTE`. Most of the time, we'll only use `FRAGMENT` for textures and samplers, but it's good to know what else is available.
+Nuestro `texture_bind_group_layout` tiene dos entradas: una para una textura muestreada en enlace 0 y una para un muestreador en enlace 1. Ambos enlaces son visibles solo para el sombreador de fragmentos como se especifica en `FRAGMENT`. Los valores posibles para este campo son cualquier combinación bit a bit de `NONE`, `VERTEX`, `FRAGMENT` o `COMPUTE`. La mayoría de las veces, solo usaremos `FRAGMENT` para texturas y muestreadores, pero es bueno saber qué más está disponible.
 
-With `texture_bind_group_layout`, we can now create our `BindGroup`:
+Con `texture_bind_group_layout`, ahora podemos crear nuestro `BindGroup`:
 
 ```rust
 let diffuse_bind_group = device.create_bind_group(
@@ -246,9 +246,9 @@ let diffuse_bind_group = device.create_bind_group(
 );
 ```
 
-Looking at this, you might get a bit of déjà vu! That's because a `BindGroup` is a more specific declaration of the `BindGroupLayout`. The reason they're separate is that it allows us to swap out `BindGroup`s on the fly, so long as they all share the same `BindGroupLayout`. Each texture and sampler we create will need to be added to a `BindGroup`. For our purposes, we'll create a new bind group for each texture.
+Mirando esto, ¡podrías tener un poco de déjà vu! Eso es porque un `BindGroup` es una declaración más específica del `BindGroupLayout`. La razón por la que están separados es que nos permite cambiar los `BindGroup`s sobre la marcha, siempre que todos compartan el mismo `BindGroupLayout`. Cada textura y muestreador que creamos deberá ser agregado a un `BindGroup`. Para nuestros propósitos, crearemos un nuevo grupo de enlace para cada textura.
 
-Now that we have our `diffuse_bind_group`, let's add it to our `State` struct:
+Ahora que tenemos nuestro `diffuse_bind_group`, agreguémoslo a nuestra estructura `State`:
 
 ```rust
 pub struct State {
@@ -266,7 +266,7 @@ pub struct State {
 }
 ```
 
-Make sure we return these fields in the `new` method:
+Asegúrate de devolver estos campos en el método `new`:
 
 ```rust
 impl State {
@@ -290,7 +290,7 @@ impl State {
 }
 ```
 
-Now that we've got our `BindGroup`, we can use it in our `render()` function.
+Ahora que tenemos nuestro `BindGroup`, podemos usarlo en nuestra función `render()`.
 
 ```rust
 // render()
@@ -305,7 +305,7 @@ render_pass.draw_indexed(0..self.num_indices, 0, 0..1);
 
 ## PipelineLayout
 
-Remember the `PipelineLayout` we created back in [the pipeline section](/learn-wgpu/beginner/tutorial3-pipeline#how-do-we-use-the-shaders)? Now, we finally get to use it! The `PipelineLayout` contains a list of `BindGroupLayout`s that the pipeline can use. Modify `render_pipeline_layout` to use our `texture_bind_group_layout`.
+¿Recuerdas el `PipelineLayout` que creamos hace tiempo en [la sección de tubería](/learn-wgpu/beginner/tutorial3-pipeline#how-do-we-use-the-shaders)? ¡Ahora finalmente llegamos a usarlo! El `PipelineLayout` contiene una lista de `BindGroupLayout`s que la tubería puede usar. Modifica `render_pipeline_layout` para usar nuestro `texture_bind_group_layout`.
 
 ```rust
 async fn new(...) {
@@ -321,12 +321,12 @@ async fn new(...) {
 }
 ```
 
-## A change to the VERTICES
-There are a few things we need to change about our `Vertex` definition. Up to now, we've been using a `color` attribute to set the color of our mesh. Now that we're using a texture, we want to replace our `color` with `tex_coords`. These coordinates will then be passed to the `Sampler` to retrieve the appropriate color.
+## Un cambio en los VÉRTICES
+Hay algunas cosas que necesitamos cambiar sobre nuestra definición de `Vertex`. Hasta ahora, hemos estado usando un atributo `color` para establecer el color de nuestra malla. Ahora que estamos usando una textura, queremos reemplazar nuestro `color` con `tex_coords`. Estas coordenadas luego serán pasadas al `Sampler` para recuperar el color apropiado.
 
-Since our `tex_coords` are two-dimensional, we'll change the field to take two floats instead of three.
+Como nuestras `tex_coords` son bidimensionales, cambiaremos el campo para tomar dos flotantes en lugar de tres.
 
-First, we'll change the `Vertex` struct:
+Primero, cambiaremos la estructura `Vertex`:
 
 ```rust
 #[repr(C)]
@@ -337,7 +337,7 @@ struct Vertex {
 }
 ```
 
-And then reflect these changes in the `VertexBufferLayout`:
+Y luego refleja estos cambios en el `VertexBufferLayout`:
 
 ```rust
 impl Vertex {
@@ -363,7 +363,7 @@ impl Vertex {
 }
 ```
 
-Lastly, we need to change `VERTICES` itself. Replace the existing definition with the following:
+Por último, necesitamos cambiar `VERTICES` en sí. Reemplaza la definición existente con la siguiente:
 
 ```rust
 // Changed
@@ -376,9 +376,9 @@ const VERTICES: &[Vertex] = &[
 ];
 ```
 
-## Shader time
+## Hora del Sombreador
 
-With our new `Vertex` structure in place, it's time to update our shaders. We'll first need to pass our `tex_coords` into the vertex shader and then use them over to our fragment shader to get the final color from the `Sampler`. Let's start with the vertex shader:
+Con nuestra nueva estructura `Vertex` en su lugar, es hora de actualizar nuestros sombreadores. Primero necesitaremos pasar nuestras `tex_coords` al sombreador de vértices y luego usarlas en nuestro sombreador de fragmentos para obtener el color final del `Sampler`. Empecemos con el sombreador de vértices:
 
 ```wgsl
 // Vertex shader
@@ -404,7 +404,7 @@ fn vs_main(
 }
 ```
 
-Now that we have our vertex shader outputting our `tex_coords`, we need to change the fragment shader to take them in. With these coordinates, we'll finally be able to use our sampler to get a color from our texture.
+Ahora que tenemos nuestro sombreador de vértices generando nuestras `tex_coords`, necesitamos cambiar el sombreador de fragmentos para tomarlas. Con estas coordenadas, finalmente podremos usar nuestro muestreador para obtener un color de nuestra textura.
 
 ```wgsl
 // Fragment shader
@@ -420,19 +420,19 @@ fn fs_main(in: VertexOutput) -> @location(0) vec4<f32> {
 }
 ```
 
-The variables `t_diffuse` and `s_diffuse` are what's known as uniforms. We'll go over uniforms more in the [cameras section](/beginner/tutorial6-uniforms/). For now, all we need to know is that `group()` corresponds to the 1st parameter in `set_bind_group()` and `binding()` relates to the `binding` specified when we created the `BindGroupLayout` and `BindGroup`.
+Las variables `t_diffuse` y `s_diffuse` son lo que se conoce como uniformes. Hablaremos más sobre uniformes en la [sección de cámaras](/beginner/tutorial6-uniforms/). Por ahora, todo lo que necesitamos saber es que `group()` corresponde al 1er parámetro en `set_bind_group()` y `binding()` se relaciona con el `binding` especificado cuando creamos el `BindGroupLayout` y `BindGroup`.
 
-## The results
+## Los resultados
 
-If we run our program now, we should get the following result:
+Si ejecutamos nuestro programa ahora, deberíamos obtener el siguiente resultado:
 
 ![an upside down tree on a pentagon](./upside-down.png)
 
-That's weird. Our tree is upside down! This is because wgpu's world coordinates have the y-axis pointing up, while texture coordinates have the y-axis pointing down. In other words, (0, 0) in texture coordinates corresponds to the top-left of the image, while (1, 1) is the bottom right.
+¡Qué raro! ¡Nuestro árbol está al revés! Esto es porque las coordenadas del mundo de wgpu tienen el eje y apuntando hacia arriba, mientras que las coordenadas de textura tienen el eje y apuntando hacia abajo. En otras palabras, (0, 0) en coordenadas de textura corresponde a la esquina superior izquierda de la imagen, mientras que (1, 1) es la esquina inferior derecha.
 
 ![happy-tree-uv-coords.png](./happy-tree-uv-coords.png)
 
-We can get our triangle right-side up by replacing the y coordinate `y` of each texture coordinate with `1 - y`:
+Podemos voltear nuestro triángulo correctamente reemplazando la coordenada y `y` de cada coordenada de textura con `1 - y`:
 
 ```rust
 const VERTICES: &[Vertex] = &[
@@ -445,13 +445,13 @@ const VERTICES: &[Vertex] = &[
 ];
 ```
 
-With that in place, we now have our tree right-side up on our pentagon:
+Con eso en su lugar, ahora tenemos nuestro árbol en la posición correcta en nuestro pentágono:
 
 ![our happy tree as it should be](./rightside-up.png)
 
-## Cleaning things up
+## Limpiando las cosas
 
-For convenience, let's pull our texture code into its own module. We'll first need to add the [anyhow](https://docs.rs/anyhow/) crate to our `Cargo.toml` file to simplify error handling;
+Para mayor comodidad, extraigamos nuestro código de textura en su propio módulo. Primero necesitamos agregar el [crate de anyhow](https://docs.rs/anyhow/) a nuestro archivo `Cargo.toml` para simplificar el manejo de errores;
 
 ```toml
 [dependencies]
@@ -465,7 +465,7 @@ wgpu = "27.0.0"
 bytemuck = { version = "1.24", features = [ "derive" ] } # NEW!
 ```
 
-Then, in a new file called `src/texture.rs`, add the following:
+Luego, en un nuevo archivo llamado `src/texture.rs`, agrega lo siguiente:
 
 ```rust
 use image::GenericImageView;
@@ -552,17 +552,17 @@ impl Texture {
 
 <div class="note">
 
-Notice that we're using `to_rgba8()` instead of `as_rgba8()`. PNGs work fine with `as_rgba8()`, as they have an alpha channel. But JPEGs don't have an alpha channel, and the code would panic if we try to call `as_rgba8()` on the JPEG texture image we are going to use. Instead, we can use `to_rgba8()` to handle such an image, which will generate a new image buffer with an alpha channel even if the original image does not have one.
+Observa que estamos usando `to_rgba8()` en lugar de `as_rgba8()`. Los PNGs funcionan bien con `as_rgba8()`, ya que tienen un canal alfa. Pero los JPEGs no tienen un canal alfa, y el código entraría en pánico si intentamos llamar a `as_rgba8()` en la imagen de textura JPEG que vamos a usar. En su lugar, podemos usar `to_rgba8()` para manejar tal imagen, que generará un nuevo búfer de imagen con un canal alfa incluso si la imagen original no tiene uno.
 
 </div>
 
-We need to import `texture.rs` as a module, so at the top of `lib.rs` add the following.
+Necesitamos importar `texture.rs` como módulo, así que en la parte superior de `lib.rs` agrega lo siguiente.
 
 ```rust
 mod texture;
 ```
 
-The texture creation code in `new()` now gets a lot simpler:
+El código de creación de textura en `new()` ahora se simplifica mucho:
 
 ```rust
 let config = wgpu::SurfaceConfiguration {
@@ -582,7 +582,7 @@ let diffuse_texture = texture::Texture::from_bytes(&device, &queue, diffuse_byte
 // Everything up until `let texture_bind_group_layout = ...` can now be removed.
 ```
 
-We still need to store the bind group separately so that `Texture` doesn't need to know how the `BindGroup` is laid out. The creation of `diffuse_bind_group` slightly changes to use the `view` and `sampler` fields of `diffuse_texture`:
+Aún necesitamos almacenar el grupo de enlace por separado para que `Texture` no necesite saber cómo se distribuye el `BindGroup`. La creación de `diffuse_bind_group` cambia ligeramente para usar los campos `view` y `sampler` de `diffuse_texture`:
 
 ```rust
 let diffuse_bind_group = device.create_bind_group(
@@ -603,7 +603,7 @@ let diffuse_bind_group = device.create_bind_group(
 );
 ```
 
-Finally, let's update our `State` field to use our shiny new `Texture` struct, as we'll need it in future tutorials.
+Finalmente, actualicemos nuestro campo `State` para usar nuestra nueva estructura `Texture` reluciente, ya que la necesitaremos en futuros tutoriales.
 
 ```rust
 pub struct State {
@@ -627,16 +627,16 @@ impl State {
 }
 ```
 
-Phew!
+¡Uf!
 
-With these changes in place, the code should be working the same as before, but we now have a much easier way to create textures.
+Con estos cambios en su lugar, el código debería funcionar igual que antes, pero ahora tenemos una forma mucho más fácil de crear texturas.
 
-## Demo
+## Demostración
 
 <WasmExample example="tutorial5_textures"></WasmExample>
 
 <AutoGithubLink/>
 
-## Challenge
+## Desafío
 
-Create another texture and swap it out when you press the space key.
+Crea otra textura e intercámbiala cuando presiones la tecla de espacio.
