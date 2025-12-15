@@ -10,17 +10,17 @@ module.exports = {
         },
     },
     themeConfig: {
-        domain: '/learn-wgpu-es',
+        domain: 'https://mendozanicolas.github.io/learn-wgpu-es',
         author: {
             name: 'Benjamin Hansen',
             twitter: 'https://twitter.com/sotrh760',
         },
         displayAllHeaders: false,
-        lastUpdated: 'Last Updated',
+        lastUpdated: 'Última Actualización',
         sidebar: [
             '/',
             {
-                title: 'Beginner',
+                title: 'Principiante',
                 collapsable: false,
                 children: [
                     '/beginner/tutorial1-window/',
@@ -35,7 +35,7 @@ module.exports = {
                 ],
             },
             {
-                title: 'Intermediate',
+                title: 'Intermedio',
                 collapsable: false,
                 children: [
                     '/intermediate/tutorial10-lighting/',
@@ -65,7 +65,7 @@ module.exports = {
                 ]
             },
             {
-                title: 'News',
+                title: 'Noticias',
                 collapsable: true,
                 children: [
                     '/news/27.0/',
