@@ -1,17 +1,18 @@
-# First Major Version! (22.0)
+# ¡Primera Versión Mayor! (22.0)
 
-Theres only a few things here. First all the shader related config
-structs now have a `compilation_options` field. For now I'm just leaving
-it as `Default::default()`, but if you have specific compilation
-needs it's there for you.
+Aquí solo hay algunos cambios. Primero, todas las estructuras de
+configuración relacionadas con shaders ahora tienen un campo `compilation_options`.
+Por ahora simplemente lo estoy dejando como `Default::default()`, pero si
+tienes necesidades específicas de compilación está disponible para ti.
 
-The next thing is `RenderPipelineDescriptor` and `ComputePipelineDescriptor`
-now have a `cache` field. This allows you to supply a cache to use during
-shader compilation. This is only really useful for Android devices as most
-desktop hardware/drivers provide caching. I've left it as `None` for now.
+Lo siguiente es que `RenderPipelineDescriptor` y `ComputePipelineDescriptor`
+ahora tienen un campo `cache`. Esto te permite proporcionar un caché para
+usar durante la compilación de shaders. Esto es realmente útil solo para
+dispositivos Android ya que la mayoría del hardware de escritorio y los
+controladores proporcionan caché. Lo he dejado como `None` por ahora.
 
-`DeviceDescriptor` now has a `memory_hint` field. You can use this to ask
-the gpu to prioritize performance, memory usage, or allow you to request
-a custom memory block size. These are just hints though and the hardware
-has the final say in how to do things. I've left this as `Default::default()`
-for now.
+`DeviceDescriptor` ahora tiene un campo `memory_hint`. Puedes usar esto para
+pedirle a la GPU que priorice el rendimiento, el uso de memoria, o permitirte
+solicitar un tamaño de bloque de memoria personalizado. Sin embargo, estas
+son solo sugerencias y el hardware tiene la palabra final en cómo hacer las
+cosas. Lo he dejado como `Default::default()` por ahora.

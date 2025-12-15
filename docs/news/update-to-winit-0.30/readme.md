@@ -1,16 +1,16 @@
-# Update to Winit 0.30!
+# ¡Actualización a Winit 0.30!
 
-If you've been watching [the winit update tracker](https://github.com/sotrh/learn-wgpu/issues/503), you'll likely be happy to see this update!
+Si has estado siguiendo [el rastreador de actualizaciones de winit](https://github.com/sotrh/learn-wgpu/issues/503), probablemente te alegre ver esta actualización!
 
-## It's been a long time coming
+## Ha pasado mucho tiempo
 
-Up and to this point I've had winit locked at version 0.29. The reason for this was that the update to 0.30 broke a lot of things and I haven't had the time to go through and fix everything. On top of that I was having trouble with getting the canvas correctly.
+Hasta ahora he mantenido winit bloqueado en la versión 0.29. La razón fue que la actualización a 0.30 rompió muchas cosas y no he tenido tiempo de revisar y arreglar todo. Además, he tenido dificultades para obtener el canvas correctamente.
 
-The bulk of [tutorial 2](../../beginner/tutorial2-surface/) has changed so head there to see what's new.
+La mayoría del contenido de [tutorial 2](../../beginner/tutorial2-surface/) ha cambiado, así que dirígete allí para ver qué hay de nuevo.
 
-Not much has changed on Wgpu itself, so I'll leave it there.
+No ha cambiado mucho en Wgpu en sí, así que lo dejaré aquí.
 
-I'd like to shout out my top patrons!
+¡Me gustaría destacar a mis principales patrocinadores!
 
 * David Laban
 * Bernard Llanos
@@ -26,25 +26,25 @@ I'd like to shout out my top patrons!
 * Gunstein Vatnar
 * Lions Heart
 * Nico Arbogast
-* Dude 
+* Dude
 * Youngsuk Kim
 * Alexander Kabirov
 * charlesk
 * Danny McGee
-* yutani 
+* yutani
 * Eliot Bolduc
 * Thunk
 * Ben Anderson
 * Craft Links
-* Filip 
+* Filip
 * Zeh Fernando
 * Ryan
 * Ken K
-* Felix 
+* Felix
 * 大典 加藤
 * Tema
 * Andrea Postal
 * Davide Prati
 * dadofboi
 
-If you like what I do and would like to support feel free to check out [my patreon](https://www.patreon.com/c/sotrh)!
+Si te gusta lo que hago y deseas apoyarme, no dudes en visitar [mi patreon](https://www.patreon.com/c/sotrh)!

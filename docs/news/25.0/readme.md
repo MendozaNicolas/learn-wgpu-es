@@ -1,14 +1,14 @@
-# Version 25.0!
+# ¡Versión 25.0!
 
-As with 24.0 not much has changed for the tutorial. If
-you want the full patch notes you can check them out
-[here](https://github.com/gfx-rs/wgpu/releases/tag/v25.0.0)
+Al igual que en la versión 24.0, no ha cambiado mucho en el tutorial. Si
+quieres ver las notas de parche completas, puedes consultarlas
+[aquí](https://github.com/gfx-rs/wgpu/releases/tag/v25.0.0)
 
-Two things did change to though:
+Sin embargo, dos cosas sí han cambiado:
 
-1. `requestDevice` now takes one parameter instead of 2.
-and the trace has been moved into `DeviceDescriptor`. Here's
-a code snippet:
+1. `requestDevice` ahora toma un parámetro en lugar de 2.
+y el trace se ha movido a `DeviceDescriptor`. Aquí hay
+un fragmento de código:
 
 ```rust
 let (device, queue) = adapter.request_device(
@@ -27,11 +27,11 @@ let (device, queue) = adapter.request_device(
 ).await.unwrap();
 ```
 
-2. `Device::poll()` takes `PollType` instead of `Maintain`:
+2. `Device::poll()` toma `PollType` en lugar de `Maintain`:
 
 ```
 device.poll(wgpu::PollType::wait_indefinitely()).unwrap();
 ```
 
-That's pretty much it! As always feel free to create a issue/PR
-on the repo if I missed anything!
+¡Eso es prácticamente todo! Como siempre, siéntete libre de crear un issue/PR
+en el repositorio si me falta algo.

@@ -1,18 +1,18 @@
-# Update to 27.0!
+# Actualización a 27.0!
 
-Pretty quick update just two main things
+Una actualización bastante rápida con solo dos cambios principales
 
-* `wgpu::DeviceDescriptor` now has an `experimental_features` field that tells
-WGPU if we want to use features that haven't been stablized. For the tutorial
-we set this to `wgpu::ExperimentalFeatures::disabled()`
-* `PollType::Wait` now has fields: `submission_index` and `timeout`. We can get
-the submission index from `Queue::submit`, but we only use
-this in a couple places so we'll just use `PollType::wait_indefinitely()`.
+* `wgpu::DeviceDescriptor` ahora tiene un campo `experimental_features` que le
+indica a WGPU si queremos usar características que aún no han sido estabilizadas.
+Para el tutorial establecemos esto en `wgpu::ExperimentalFeatures::disabled()`
+* `PollType::Wait` ahora tiene campos: `submission_index` y `timeout`. Podemos obtener
+el índice de envío desde `Queue::submit`, pero solo usamos
+esto en un par de lugares así que simplemente usaremos `PollType::wait_indefinitely()`.
 
-## Thanks to my patrons!
+## ¡Gracias a mis patrocinadores!
 
-If you like what I do, and want to support me check out my [patreon](https://patreon.com/sotrh)!
-A special shoutout to these members!
+Si te gusta lo que hago y quieres apoyarme, visita mi [patreon](https://patreon.com/sotrh)!
+¡Un agradecimiento especial a estos miembros!
 
 * David Laban
 * Bernard Llanos

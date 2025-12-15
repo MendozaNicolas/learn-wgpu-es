@@ -1,16 +1,16 @@
-# Version 24.0
+# Versión 24.0
 
-I missed 23.0, as I've been busy with work and a baby! Not much
-has changed between 22.0 and 24.0 though at least as far as this
-tutorial is concerned.
+No incluí la versión 23.0, ¡ya que he estado ocupado con el trabajo y un bebé! No ha habido
+muchos cambios entre la versión 22.0 y 24.0, al menos en lo que respecta a este
+tutorial.
 
-## Entry point inference
+## Inferencia de punto de entrada
 
-If a shader has only one function labeled with `@vertex` for
-vertex shaders, or `@fragment` for fragment shaders, then Wgpu
-you don't need to specify the entry point when creating a render
-pipeline. This means if you do want to specify the entry point,
-you need to wrap it in an option.
+Si un shader tiene solo una función etiquetada con `@vertex` para
+shaders de vértices, o `@fragment` para shaders de fragmento, entonces Wgpu
+no necesitas especificar el punto de entrada al crear un pipeline de
+renderizado. Esto significa que si deseas especificar el punto de entrada,
+necesitas envolverlo en una opción.
 
 ```rust
 device.create_render_pipeline(&wgpu::RenderPipelineDescriptor {
@@ -39,7 +39,7 @@ device.create_render_pipeline(&wgpu::RenderPipelineDescriptor {
     })
 ```
 
-The same applies for compute pipelines.
+Lo mismo aplica para pipelines de cómputo.
 
 ```rust
 let equirect_to_cubemap =
@@ -53,25 +53,25 @@ let equirect_to_cubemap =
     });
 ```
 
-## Other changes
+## Otros cambios
 
-- `ImageCopyTexture` has been renamed to `TexelCopyTextureInfo`
-- `ImageDataLayout` has been renamed to `TexelCopyBufferLayout`
-- `ImageCopyBuffer` has been renamed to `TexelCopyBufferInfo`
-- `wgpu::Instance::new()` now takes a reference to a `&wgpu::InstanceDescriptor`
-- `wgpu::SurfaceError::Other` is now a thing
+- `ImageCopyTexture` ha sido renombrado a `TexelCopyTextureInfo`
+- `ImageDataLayout` ha sido renombrado a `TexelCopyBufferLayout`
+- `ImageCopyBuffer` ha sido renombrado a `TexelCopyBufferInfo`
+- `wgpu::Instance::new()` ahora toma una referencia a `&wgpu::InstanceDescriptor`
+- `wgpu::SurfaceError::Other` ahora existe
 
-## Getting WASM to run
+## Hacer funcionar WASM
 
-I'm not sure if it's specifically a version `24.0` thing, but I had
-to add some code to the `Cargo.toml` to get `webpack` to handle the
-WASM properly.
+No estoy seguro si es algo específico de la versión `24.0`, pero tuve
+que agregar algo de código a `Cargo.toml` para que `webpack` manejara
+WASM correctamente.
 
 ```toml
-# This should go in the Cargo.toml in the root directory
+# Esto debe ir en el Cargo.toml en el directorio raíz
 [profile.release]
 strip = true
 ```
 
-If you know why this is required, let me know.
+Si sabes por qué esto es requerido, avísame.
 
