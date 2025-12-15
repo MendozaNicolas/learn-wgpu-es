@@ -11,15 +11,15 @@ I'm considering either switching to using that, or writing my own text code.
 
 </div>
 
-Practically the "Hello World!" of games. Pong has been remade thousands of times. I know Pong. You know Pong. We all know Pong. That being said, this time I wanted to put in a little more effort than most people do. This showcase has a basic menu system, sounds, and different game states.
+Prácticamente el "¡Hola Mundo!" de los juegos. Pong ha sido recreado miles de veces. Yo conozco Pong. Tú conoces Pong. Todos conocemos Pong. Dicho esto, esta vez quise hacer un esfuerzo un poco mayor que el que la mayoría de la gente suele hacer. Este showcase tiene un sistema de menú básico, sonidos y diferentes estados de juego.
 
-The architecture is not the best as I prescribed to the "get things done" mentality. If I were to redo this project, I'd change a lot of things. Regardless, let's get into the postmortem.
+La arquitectura no es la mejor ya que me adhería a la mentalidad de "hacer las cosas hechas". Si fuera a rehacer este proyecto, cambiaría muchas cosas. Independientemente, entremos en el postmortem.
 
-## The Architecture
+## La Arquitectura
 
-I was messing around with separating state from the render code. It ended up similar to an Entity Component System model.
+Estuve experimentando con separar el estado del código de renderizado. Terminó siendo similar a un modelo de Entity Component System.
 
-I had a `State` class with all of the objects in the scene. This included the ball and the paddles, as well as the text for the scores and even the menu. `State` also included a `game_state` field of type `GameState`.
+Tenía una clase `State` con todos los objetos en la escena. Esto incluía la pelota y las paletas, así como el texto de las puntuaciones e incluso el menú. `State` también incluía un campo `game_state` de tipo `GameState`.
 
 ```rust
 #[derive(Debug, Copy, Clone, Eq, PartialEq)]
@@ -32,22 +32,22 @@ pub enum GameState {
 }
 ```
 
-The `State` class didn't have any methods on it as I was taking a more data-oriented approach. Instead, I created a `System` trait and created multiple structs that implemented it.
+La clase `State` no tenía ningún método ya que estaba tomando un enfoque más orientado a datos. En su lugar, creé un trait `System` y creé múltiples structs que lo implementaban.
 
 ```rust
 pub trait System {
     #[allow(unused_variables)]
     fn start(&mut self, state: &mut state::State) {}
     fn update_state(
-        &self, 
-        input: &input::Input, 
-        state: &mut state::State, 
+        &self,
+        input: &input::Input,
+        state: &mut state::State,
         events: &mut Vec<state::Event>,
     );
 }
 ```
 
-The systems would be in charge of controlling updating the different objects' states (position, visibility, etc), as well as updating the `game_state` field. I created all the systems on startup and used a `match` on `game_state` to determine which ones should be allowed to run (the `visiblity_system` always runs as it is always needed).
+Los sistemas estarían a cargo de controlar la actualización de los estados de los diferentes objetos (posición, visibilidad, etc), así como actualizar el campo `game_state`. Creé todos los sistemas al inicio y usé un `match` en `game_state` para determinar cuáles deberían estar permitidos para ejecutarse (el `visiblity_system` siempre se ejecuta ya que siempre es necesario).
 
 ```rust
 visiblity_system.update_state(&input, &mut state, &mut events);
@@ -84,27 +84,27 @@ match state.game_state {
 }
 ```
 
-It's definitely not the cleanest code, but it works.
+Definitivamente no es el código más limpio, pero funciona.
 
-I ended up having 6 systems in total.
+Terminé teniendo 6 sistemas en total.
 
-1. I added the `VisibilitySystem` near the end of development. Up to that point, all the systems had to set the `visible` field of the objects. That was a pain and cluttered the logic. Instead, I decided to create the `VisiblitySystem` to handle that.
+1. Agregué el `VisibilitySystem` cerca del final del desarrollo. Hasta ese momento, todos los sistemas tenían que establecer el campo `visible` de los objetos. Eso era molesto y saturaba la lógica. En su lugar, decidí crear el `VisiblitySystem` para manejar eso.
 
-2. The `MenuSystem` handled controlling what text was focused, and what would happen when the user pressed the enter key. If the `Play` button was focused, pressing enter would change `game_state` to `GameState::Serving` which would start the game. The `Quit` button would shift to `GameState::Quiting`.
+2. El `MenuSystem` manejaba controlar qué texto estaba enfocado y qué sucedería cuando el usuario presionara la tecla enter. Si el botón `Play` estaba enfocado, presionar enter cambiaría `game_state` a `GameState::Serving` que iniciaría el juego. El botón `Quit` cambiaría a `GameState::Quiting`.
 
-3. The `ServingSystem` sets the ball's position to `(0.0, 0.0)`, updates the score texts, and shifts into `GameState::Playing` after a timer.
+3. El `ServingSystem` establece la posición de la pelota a `(0.0, 0.0)`, actualiza los textos de puntuación y cambia a `GameState::Playing` después de un temporizador.
 
-4. The `PlaySystem` controls the players. It allows them to move and keeps them from leaving the play space. This system runs on both `GameState::Playing` as well as `GameState::Serving`. I did this to allow the players to reposition themselves before the serve. The `PlaySystem` also will shift into `GameState::GameOver` when one of the players' scores is greater than 2.
+4. El `PlaySystem` controla los jugadores. Les permite moverse y evita que salgan del espacio de juego. Este sistema se ejecuta tanto en `GameState::Playing` como en `GameState::Serving`. Hice esto para permitir que los jugadores se reposicionaran antes del saque. El `PlaySystem` también cambiará a `GameState::GameOver` cuando la puntuación de uno de los jugadores sea mayor que 2.
 
-5. The `BallSystem` system controls the ball's movement as well as its bouncing of walls/players. It also updates the score and shifts to `GameState::Serving` when the ball goes off the side of the screen.
+5. El sistema `BallSystem` controla el movimiento de la pelota así como su rebote en las paredes/jugadores. También actualiza la puntuación y cambia a `GameState::Serving` cuando la pelota se sale del lado de la pantalla.
 
-6. The `GameOver` system updates the `win_text` and shifts to `GameState::MainMenu` after a delay.
+6. El sistema `GameOver` actualiza el `win_text` y cambia a `GameState::MainMenu` después de un retraso.
 
-I found the system approach quite nice to work with. My implementation wasn't the best, but I would like to work with it again. I might even implement my own ECS.
+Encontré el enfoque de sistemas muy agradable para trabajar. Mi implementación no era la mejor, pero me gustaría trabajar con ella nuevamente. Incluso podría implementar mi propio ECS.
 
 ## Input
 
-The `System` trait, originally had a `process_input` method. This became a problem when I was implementing allowing players to move between serves. The players would get stuck when the `game_state` switched from `Serving` to `Playing` as the inputs were getting stuck. I only called `process_input` on systems that were currently in use.  Changing that would be finicky, so I decided to move all the input code into its own struct.
+El trait `System`, originalmente tenía un método `process_input`. Esto se convirtió en un problema cuando estaba implementando permitir que los jugadores se muevan entre saques. Los jugadores se quedaban atrapados cuando el `game_state` cambiaba de `Serving` a `Playing` ya que las entradas se quedaban atrapadas. Solo llamaba a `process_input` en sistemas que estaban actualmente en uso. Cambiar eso sería complicado, así que decidí mover todo el código de entrada a su propio struct.
 
 ```rust
 use winit::event::{VirtualKeyCode, ElementState};
@@ -160,13 +160,13 @@ impl Input {
 }
 ```
 
-This works really well. I simply pass this struct into the `update_state` method.
+Funciona muy bien. Simplemente paso este struct al método `update_state`.
 
 ## Render
 
-I used [wgpu_glyph](https://docs.rs/wgpu_glyph) for the text and white quads for the ball and paddles. There's not much to say here, it's Pong after all.
+Usé [wgpu_glyph](https://docs.rs/wgpu_glyph) para el texto y quads blancos para la pelota y las paletas. No hay mucho que decir aquí, es Pong después de todo.
 
-I did mess around with batching, however. It was totally overkill for this project, but it was a good learning experience. Here's the code if you're interested.
+Sí experimenté con batching, sin embargo. Fue totalmente excesivo para este proyecto, pero fue una buena experiencia de aprendizaje. Aquí está el código si te interesa.
 
 ```rust
 pub struct QuadBufferBuilder {
@@ -190,7 +190,7 @@ impl QuadBufferBuilder {
             let min_y = ball.position.y - ball.radius;
             let max_x = ball.position.x + ball.radius;
             let max_y = ball.position.y + ball.radius;
-    
+
             self.push_quad(min_x, min_y, max_x, max_y)
         } else {
             self
@@ -200,10 +200,10 @@ impl QuadBufferBuilder {
     pub fn push_player(self, player: &state::Player) -> Self {
         if player.visible {
             self.push_quad(
-                player.position.x - player.size.x * 0.5, 
-                player.position.y - player.size.y * 0.5, 
+                player.position.x - player.size.x * 0.5,
+                player.position.y - player.size.y * 0.5,
                 player.position.x + player.size.x * 0.5,
-                player.position.y + player.size.y * 0.5, 
+                player.position.y + player.size.y * 0.5,
             )
         } else {
             self
@@ -249,7 +249,7 @@ impl QuadBufferBuilder {
 
 ## Sound
 
-I used [rodio](https://docs.rs/rodio) for sound. I created a `SoundPack` class to store the sounds. Deciding how to get the sounds to play took some thinking. I chose to pass in a `Vec<state::Event>` into the `update_state` method. The system would then push an event to the `Vec`. The `Event` enum is listed below.
+Usé [rodio](https://docs.rs/rodio) para el sonido. Creé una clase `SoundPack` para almacenar los sonidos. Decidir cómo lograr que los sonidos se reprodujeran requirió algo de pensamiento. Elegí pasar un `Vec<state::Event>` al método `update_state`. El sistema entonces empujaría un evento al `Vec`. El enum `Event` se enumera a continuación.
 
 ```rust
 #[derive(Debug, Copy, Clone)]
@@ -261,13 +261,13 @@ pub enum Event {
 }
 ```
 
-I was going to have `BallBounce` play a positioned sound using a `SpatialSink`, but I was getting clipping issues, and I wanted to be done with the project. Aside from that, the events system worked nicely.
+Iba a hacer que `BallBounce` reprodujera un sonido posicionado usando un `SpatialSink`, pero tenía problemas de recorte, y quería terminar con el proyecto. Aparte de eso, el sistema de eventos funcionó bien.
 
 ## WASM Support
 
-This example works on the web, but there are a few steps that I needed to take to make things work. The first one was that I needed to switch to using a `lib.rs` instead of just `main.rs`. I opted to use [wasm-pack](https://rustwasm.github.io/wasm-pack/) to create the web assembly. I could have kept the old format by using wasm-bindgen directly, but I ran into issues with using the wrong version of wasm-bindgen, so I elected to stick with wasm-pack.
+Este ejemplo funciona en la web, pero hay algunos pasos que necesitaba seguir para que las cosas funcionaran. El primero fue que necesitaba cambiar a usar un `lib.rs` en lugar de solo `main.rs`. Opté por usar [wasm-pack](https://rustwasm.github.io/wasm-pack/) para crear el web assembly. Habría podido mantener el formato anterior usando wasm-bindgen directamente, pero tenía problemas al usar la versión incorrecta de wasm-bindgen, así que elegí quedarme con wasm-pack.
 
-In order for wasm-pack to work properly I first needed to add some dependencies:
+Para que wasm-pack funcione correctamente, primero necesitaba agregar algunas dependencias:
 
 ```toml[dependencies]
 anyhow = "1.0"
@@ -307,17 +307,17 @@ naga = { version = "27.0", features = ["glsl-in", "spv-out", "wgsl-out"]}
 
 ```
 
-I'll highlight a few of these:
+Destacaré algunos de estos:
 
-- rand: If you want to use rand on the web, you need to include getrandom directly and enable its `js` feature.
-- rodio: I had to disable all of the features for the WASM build, and then enabled them separately. The `mp3` feature specifically wasn't working for me. There might have been a workaround, but since I'm not using mp3 in this example I just elected to only use wav.
-- instant: This crate is basically just a wrapper around `std::time::Instant`. In a normal build, it's just a type alias. In web builds it uses the browser's time functions.
-- cfg-if: This is a convenient crate for making platform-specific code less horrible to write.
-- env_logger and console_log: env_logger doesn't work on web assembly so we need to use a different logger. console_log is the one used in the web assembly tutorials, so I went with that one.
-- wasm-bindgen: This crate is the glue that makes Rust code work on the web. If you are building using the wasm-bindgen command you need to make sure that the command version of wasm-bindgen matches the version in Cargo.toml **exactly** otherwise you'll have problems. If you use wasm-pack it will download the appropriate wasm-bindgen binary to use for your crate.
-- web-sys: This has functions and types that allow you to use different methods available in js such as "getElementById()".
+- rand: Si deseas usar rand en la web, necesitas incluir getrandom directamente y habilitar su característica `js`.
+- rodio: Tuve que deshabilitar todas las características para la compilación WASM y luego habilitarlas por separado. La característica `mp3` específicamente no funcionaba para mí. Podría haber habido una solución alternativa, pero como no estoy usando mp3 en este ejemplo, elegí solo usar wav.
+- instant: Este crate es básicamente solo un envoltorio alrededor de `std::time::Instant`. En una compilación normal, es solo un alias de tipo. En compilaciones web utiliza las funciones de tiempo del navegador.
+- cfg-if: Este es un crate conveniente para hacer que el código específico de la plataforma sea menos horrible de escribir.
+- env_logger and console_log: env_logger no funciona en web assembly, así que necesitamos usar un registrador diferente. console_log es el que se usa en los tutoriales de web assembly, así que fui con ese.
+- wasm-bindgen: Este crate es el pegamento que hace que el código Rust funcione en la web. Si estás compilando usando el comando wasm-bindgen, necesitas asegurarte de que la versión del comando de wasm-bindgen coincida con la versión en Cargo.toml **exactamente**, de lo contrario tendrás problemas. Si usas wasm-pack descargará el binario wasm-bindgen apropiado para usar con tu crate.
+- web-sys: Esto tiene funciones y tipos que te permiten usar diferentes métodos disponibles en js como "getElementById()".
 
-Now that that's out of the way let's talk about some code. First, we need to create a function that will start our event loop.
+Ahora que eso está fuera del camino, hablemos de algo de código. Primero, necesitamos crear una función que inicie nuestro bucle de eventos.
 
 ```rust
 #[cfg(target_arch="wasm32")]
@@ -329,7 +329,7 @@ pub fn start() {
 }
 ```
 
-The `wasm_bindgen(start)` tell's wasm-bindgen that this function should be started as soon as the web assembly module is loaded by javascript. Most of the code inside this function is the same as what you'd find in other examples on this site, but there is some specific stuff we need to do on the web.
+El `wasm_bindgen(start)` le dice a wasm-bindgen que esta función debe iniciarse tan pronto como el módulo web assembly se carga en javascript. La mayoría del código dentro de esta función es igual a lo que encontrarías en otros ejemplos en este sitio, pero hay cosas específicas que necesitamos hacer en la web.
 
 ```rust
 cfg_if::cfg_if! {
@@ -342,9 +342,9 @@ cfg_if::cfg_if! {
 }
 ```
 
-This code should run before you try to do anything significant. It sets up the logger based on what architecture you're building for. Most architectures will use `env_logger`. The `wasm32` architecture will use `console_log`. It's also important that we tell Rust to forward panics to javascript. If we didn't do this we would have no idea when our Rust code panics.
+Este código debe ejecutarse antes de intentar hacer algo significativo. Configura el registrador según la arquitectura para la que estés compilando. La mayoría de las arquitecturas usarán `env_logger`. La arquitectura `wasm32` usará `console_log`. También es importante que le digamos a Rust que reenvíe los panics a javascript. Si no hiciéramos esto, no tendríamos idea de cuándo el código Rust entra en pánico.
 
-Next, we create a window. Much of it is like we've done before, but since we are supporting fullscreen we need to do some extra steps.
+A continuación, creamos una ventana. Gran parte de ella es como lo hemos hecho antes, pero como estamos compatibilizando pantalla completa, necesitamos hacer algunos pasos adicionales.
 
 ```rust
 let event_loop = EventLoop::new();
@@ -365,7 +365,7 @@ if window.fullscreen().is_none() {
 }
 ```
 
-We then have to do some web-specific stuff if we are on that platform.
+Luego tenemos que hacer algunas cosas específicas de la web si estamos en esa plataforma.
 
 ```rust
 #[cfg(target_arch = "wasm32")]
@@ -390,11 +390,11 @@ We then have to do some web-specific stuff if we are on that platform.
 }
 ```
 
-Everything else works the same.
+Todo lo demás funciona igual.
 
 ## Summary
 
-A fun project to work on. It was overly architected, and kinda hard to make changes, but a good experience nonetheless.
+Un proyecto divertido en el que trabajar. Estaba excesivamente arquitectado y era bastante difícil hacer cambios, pero una buena experiencia de todas formas.
 
 <!-- Try the code down below! (Controls currently require a keyboard.)
 

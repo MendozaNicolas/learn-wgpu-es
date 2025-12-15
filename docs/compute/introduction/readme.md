@@ -1,66 +1,66 @@
-# Intro to Compute Pipelines
+# Introducción a los Compute Pipelines
 
-Compute pipelines are one of the most exciting features that WebGPU provides.
-They allow you to run arbitrary compute workloads at speeds only possible with
-modern GPU's massive core counts. You can run machine learning models on the
-web, perform image manipulation without needing to set up the rendering pipeline
-steps such as vertex processing and fragment shading, process massive numbers of
-particles, animate hundreds of rigged characters, etc.
+Los compute pipelines son una de las características más emocionantes que proporciona WebGPU.
+Te permiten ejecutar cargas de trabajo de cómputo arbitrarias a velocidades solo posibles con
+los masivos conteos de núcleos de GPU modernos. Puedes ejecutar modelos de aprendizaje automático en la
+web, realizar manipulación de imágenes sin necesidad de configurar los pasos del pipeline de renderizado
+como procesamiento de vértices y sombreado de fragmentos, procesar números masivos de
+partículas, animar cientos de personajes rigged, etc.
 
-There are a log of topics we could cover, and what you specifically want to use
-compute shaders for might not be covered here, but hopefully it will be enough
-to get you started. On top of that I'm trying a new format where I'll include less
-of the boilerplate code and focus more on the concepts. The code will still be
-linked at the bottom of the article if you get stuck with your implementation.
+Hay muchos temas que podríamos cubrir, y lo que específicamente quieras usar
+compute shaders podría no estar cubierto aquí, pero espero que sea suficiente
+para comenzar. Además de eso, estoy intentando un nuevo formato donde incluiré menos
+código boilerplate y enfocaré más en los conceptos. El código seguirá siendo
+vinculado al final del artículo si te atascas con tu implementación.
 
-## Why GPU compute is fast
+## Por qué el cómputo en GPU es rápido
 
-GPUs are generally considered to be faster than CPUs, but that's technically not
-accurate. GPU processing speed is about the same as CPUs sometimes even slower.
-According to [NVIDIA](https://www.nvidia.com/en-us/geforce/graphics-cards/compare/)
-most of their modern cards have clock speeds around 2.5 GHz.
-[Qualcomm advertises](https://www.qualcomm.com/products/mobile/snapdragon/laptops-and-tablets/snapdragon-x-elite)
-that the Snapdragon X Elite has clock speeds of 3.4 - 4.3 Ghz.
+Las GPUs generalmente se consideran más rápidas que las CPUs, pero técnicamente no es
+preciso. La velocidad de procesamiento de GPU es aproximadamente la misma que las CPUs, a veces incluso más lenta.
+Según [NVIDIA](https://www.nvidia.com/en-us/geforce/graphics-cards/compare/)
+la mayoría de sus tarjetas modernas tienen velocidades de reloj alrededor de 2.5 GHz.
+[Qualcomm anuncia](https://www.qualcomm.com/products/mobile/snapdragon/laptops-and-tablets/snapdragon-x-elite)
+que el Snapdragon X Elite tiene velocidades de reloj de 3.4 - 4.3 Ghz.
 
-So why are GPUs so popular for massive compute loads?
+Entonces, ¿por qué las GPUs son tan populares para cargas de cómputo masivas?
 
-The answer is core count. The Snapdragon X Elite has 12 cores. The RTX 5090 has a
-whopping 21760 cores. That's 4 orders of magnitude difference. With some back of
-the napkin math if an algorithm takes a second to run one operation on the CPU and
-2 on the GPU, than given 12000 items the CPU will take 1000 seconds (about 16 minutes)
-while the GPU will take 2 seconds (not accounting for sending data to / from the GPU and
-setup time).
+La respuesta es el conteo de núcleos. El Snapdragon X Elite tiene 12 núcleos. La RTX 5090 tiene
+nada menos que 21760 núcleos. Esa es una diferencia de 4 órdenes de magnitud. Con algunas matemáticas
+al dorso si un algoritmo tarda un segundo en ejecutar una operación en la CPU y
+2 en la GPU, entonces dado 12000 elementos la CPU tardará 1000 segundos (alrededor de 16 minutos)
+mientras que la GPU tardará 2 segundos (sin contar enviar datos hacia/desde la GPU y
+tiempo de configuración).
 
-Perhaps a demonstration is in order.
+Quizás una demostración sea apropiada.
 
 <iframe width="560" height="315" src="https://www.youtube.com/embed/vGWoV-8lteA?si=Sgl2Qq0CFoaGXMQa" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe>
 
-GPUs are fast because they can do thousands of things at the same time. That being
-said, not all algorithms benefit from leveraging this compute power.
+Las GPUs son rápidas porque pueden hacer miles de cosas al mismo tiempo. Dicho esto,
+no todos los algoritmos se benefician de aprovechar este poder de cómputo.
 
-## When should I use compute pipelines?
+## ¿Cuándo debo usar compute pipelines?
 
-I can't possibly make a comprehensive list of all the things you could use a GPU for,
-but here are some rules of thumb:
+No puedo hacer una lista completa de todas las cosas para las que podrías usar una GPU,
+pero aquí hay algunas reglas generales:
 
-- Tasks that can be easily parrallelized. GPUs don't like switching tasks, so if you
-need the computation to use data from previous operations, compute shaders are likely
-to be slower than a CPU based approach. If each operation can excute without any
-knowledge of other operations, you can get a lot out of the GPU.
-- You already have the data on the GPU. If your working with texture or model data
-It can often be faster to process it with a compute shader rather than copying the data
-to the CPU, modifying it, than shipping that back to the GPU.
-- You have a massive amount of data. At some point the size of your data starts to outweigh
-the setup time and complexity of using a compute pipeline. You'll still need to tailor
-your approach to the data and processing you need to do.
+- Tareas que pueden ser fácilmente paralelizadas. Las GPUs no les gusta cambiar de tareas, así que si
+necesitas que el cálculo use datos de operaciones anteriores, los compute shaders probablemente
+serán más lentos que un enfoque basado en CPU. Si cada operación puede ejecutarse sin
+conocimiento de otras operaciones, puedes obtener mucho de la GPU.
+- Ya tienes los datos en la GPU. Si estás trabajando con datos de texturas o modelos,
+a menudo puede ser más rápido procesarlos con un compute shader en lugar de copiar los datos
+a la CPU, modificarlos, y luego enviarlos de vuelta a la GPU.
+- Tienes una cantidad masiva de datos. En algún momento el tamaño de tus datos comienza a superar
+el tiempo de configuración y la complejidad de usar un compute pipeline. Aún necesitarás adaptar
+tu enfoque a los datos y el procesamiento que necesites hacer.
 
-Now with that out of the way, let's get started!
+¡Ahora que hemos aclarado eso, comencemos!
 
-## Setting up the device and queue
+## Configurar el dispositivo y la cola
 
-Using compute shaders requires a lot less code than using a render pipeline. We
-don't need a window, so we can get a WGPU instance, request and adapter, and request
-a device and queue with this simple code:
+Usar compute shaders requiere mucho menos código que usar un render pipeline. No
+necesitamos una ventana, así que podemos obtener una instancia de WGPU, solicitar un adaptador, y solicitar
+un dispositivo y cola con este código simple:
 
 ```rust
     let instance = wgpu::Instance::new(&Default::default());
@@ -70,23 +70,23 @@ a device and queue with this simple code:
 
 <div class="note">
 
-I'm using [pollster](https://docs.rs/pollster) to handle `async` in the native code in
-these examples. You can use whatever `async` implementation you like though. I'm also
-using [anyhow](https://docs.rs/anyhow) for error handling, and [flume](https://docs.rs/flume)
-for it's `async` channel implementation.
+Estoy usando [pollster](https://docs.rs/pollster) para manejar `async` en el código nativo en
+estos ejemplos. Puedes usar cualquier implementación de `async` que prefieras. También estoy
+usando [anyhow](https://docs.rs/anyhow) para manejo de errores, y [flume](https://docs.rs/flume)
+para su implementación de canal `async`.
 
 </div>
 
-If you want more info about these calls and the potential arguments you can pass
-to them check out [the rendering guide](../../beginner/tutorial2-surface/).
+Si quieres más información sobre estas llamadas y los posibles argumentos que puedes pasar
+a ellas, revisa [la guía de renderizado](../../beginner/tutorial2-surface/).
 
-Now that we have a device to talk to the GPU let's start talking about how to set up a
-compute pipeline.
+Ahora que tenemos un dispositivo para comunicarnos con la GPU, comencemos a hablar sobre cómo configurar
+un compute pipeline.
 
 ## Compute Pipelines
 
-Compute pipelines are a lot simpler to setup than render pipelines. We don't have to setup
-the traditional vertex pipeline. Take a look!
+Los compute pipelines son mucho más simples de configurar que los render pipelines. No tenemos que configurar
+el pipeline de vértices tradicional. ¡Echa un vistazo!
 
 ```rust
     let shader = device.create_shader_module(wgpu::include_wgsl!("introduction.wgsl"));
@@ -101,12 +101,12 @@ the traditional vertex pipeline. Take a look!
     });
 ```
 
-I'm using the default values for everything here except the `label` and the shader `module`
-that contains the actual shader code. I'm not specifying a bind group `layout` which means
-wgpu will use the shader code to derive one. I don't supply an `entry_point` as WGPU will
-select a function with a `@compute` tag if there is only one in the file.
+Estoy usando los valores por defecto para todo aquí excepto la `label` y el `module` del shader
+que contiene el código del shader real. No estoy especificando un `layout` de bind group, lo que significa
+que wgpu usará el código del shader para derivar uno. No proporciono un `entry_point` ya que WGPU
+seleccionará una función con etiqueta `@compute` si hay solo una en el archivo.
 
-The shader code for this example is simple too:
+El código del shader para este ejemplo también es simple:
 
 ```wgsl
 // A read-only storage buffer that stores and array of unsigned 32bit integers
@@ -136,59 +136,59 @@ fn main(
 }
 ```
 
-This shader is very simple. All it does is copy the contents of one buffer to another.
-The one thing I feel needs some explaining is the concept of workgroups and `workgroup_size`.
+Este shader es muy simple. Todo lo que hace es copiar el contenido de un buffer a otro.
+La única cosa que siento que necesita explicación es el concepto de workgroups y `workgroup_size`.
 
 ## Workgroups
 
-While GPUs prefer that each thread can blindly process it's work, real problems
-require some amount of synchronization. Compute shaders accomplish this through work groups.
+Si bien las GPUs prefieren que cada hilo pueda procesar ciegamente su trabajo, los problemas reales
+requieren cierta cantidad de sincronización. Los compute shaders logran esto a través de workgroups.
 
-A workgroup is a group of `X * Y * Z` threads that share some information about a task.
-we define the size of this workgroup using the `workgroup_size` flag. We saw an
-abreviated version of that above but here's the full version:
+Un workgroup es un grupo de `X * Y * Z` hilos que comparten información sobre una tarea.
+Definimos el tamaño de este workgroup usando la bandera `workgroup_size`. Vimos una
+versión abreviada de eso arriba, pero aquí está la versión completa:
 
 ```wgsl
 @workgroup_size(64, 1, 1)
 ```
 
-This means that our compute shader will create workgroups with `64 * 1 * 1` threads which simplifies
-to just 64 threads per workgroup. If we instead used:
+Esto significa que nuestro compute shader creará workgroups con `64 * 1 * 1` hilos que se simplifica
+a solo 64 hilos por workgroup. Si en su lugar usáramos:
 
 ```wgsl
 @workgroup_size(64, 64, 1)
 ```
 
-We'd get `64 * 64 * 1` threads, or 4096 threads per workgroup.
+Obtendríamos `64 * 64 * 1` hilos, u 4096 hilos por workgroup.
 
-The max supported work group size can very depending on your device, but the WebGPU spec guarantees
-that the following:
+El tamaño máximo de workgroup soportado puede variar dependiendo de tu dispositivo, pero la especificación de WebGPU garantiza
+lo siguiente:
 
-- A max workgroup size X of 256
-- A max workgroup size Y of 256
-- A max workgroup size Z of 64
-- A total workgroup size of 256
+- Un tamaño máximo de workgroup X de 256
+- Un tamaño máximo de workgroup Y de 256
+- Un tamaño máximo de workgroup Z de 64
+- Un tamaño total de workgroup de 256
 
-This means that we might not be able to use `@workgroup_size(64, 64, 1)` but `@workgroup_size(16, 16, 1)`
-should work on most devices.
+Esto significa que es posible que no podamos usar `@workgroup_size(64, 64, 1)` pero `@workgroup_size(16, 16, 1)`
+debería funcionar en la mayoría de dispositivos.
 
 <div class="note">
 
-### Why XYZ?
+### ¿Por qué XYZ?
 
-A lot of data used in GPU programming comes in 2D and even 3D arrays. Because of this `workgroup_size`
-using 3 dimensions instead of 1 to make writing multidimensional code more convenient.
+Una gran parte de los datos utilizados en programación de GPU vienen en arrays 2D e incluso 3D. Por esto `workgroup_size`
+usa 3 dimensiones en lugar de 1 para hacer que escribir código multidimensional sea más conveniente.
 
-For example, a blur on a 2D image would benefit from a 2D work group so each thread would
-match up to a pixel in the image. A marching cubes implementation would benefit from a 3D workgroup,
-so each thread handles the geometry for one voxel in the voxel grid.
+Por ejemplo, un blur en una imagen 2D se beneficiaría de un workgroup 2D para que cada hilo
+coincida con un píxel en la imagen. Una implementación de marching cubes se beneficiaría de un workgroup 3D,
+para que cada hilo maneje la geometría para un voxel en la cuadrícula de voxeles.
 
 </div>
 
-## The global invocation id
+## El global invocation id
 
-Each thread in a workgroup has an id associated with it that tells what thread what workgroup
-the thread belongs to. If we access this using the `workgroup_id` built in.
+Cada hilo en un workgroup tiene un id asociado que dice a qué workgroup
+pertenece el hilo. Si accedemos a esto usando el built-in `workgroup_id`.
 
 ```wgsl
 @compute
@@ -200,8 +200,8 @@ fn main(
 }
 ```
 
-Knowing where we are in the workgroup is helpful too and we do that using the
-`local_invocation_id` built in.
+Saber dónde estamos en el workgroup también es útil, y lo hacemos usando el
+built-in `local_invocation_id`.
 
 ```wgsl
 @compute
@@ -214,19 +214,19 @@ fn main(
 }
 ```
 
-We can then compute our global position in the workgroup invocation grid using
+Luego podemos calcular nuestra posición global en la cuadrícula de invocación del workgroup usando
 
 ```wgsl
 let id = workgroup_id * workgroup_size + local_invocation_id;
 ```
 
-We can also just us the `global_invocation_id` builtin like we did in the shader
-code listed above.
+También podemos simplemente usar el built-in `global_invocation_id` como hicimos en el código del shader
+listado arriba.
 
-### Where does workgroup_id come from?
+### ¿De dónde viene workgroup_id?
 
-When we dispatch our compute shader we need to specify the X, Y, and Z dimensions
-of what's called the "compute shader grid". Consider this code.
+Cuando despachamos nuestro compute shader necesitamos especificar las dimensiones X, Y, y Z
+de lo que se llama la "cuadrícula de compute shader". Considera este código.
 
 ```rust
 
@@ -242,22 +242,22 @@ of what's called the "compute shader grid". Consider this code.
     }
 ```
 
-In the `pass.dispatch_workgroups()` call we use a grid with dimensions `(num_dispatches, 1, 1)`
-which means we'll launch `num_dispatches * 1 * 1` workgroups. The GPU then assigns each workgroup
-an id with the x coordinate being between 0 and `num_dispatches - 1`.
+En la llamada `pass.dispatch_workgroups()` usamos una cuadrícula con dimensiones `(num_dispatches, 1, 1)`
+lo que significa que lanzaremos `num_dispatches * 1 * 1` workgroups. La GPU luego asigna a cada workgroup
+un id con la coordenada x siendo entre 0 y `num_dispatches - 1`.
 
-This is important to know because if you change workgroup size, the `global_invocation_id` can change
-meaning you are potentially use more threads than you need or not enough.
+Es importante saberlo porque si cambias el tamaño del workgroup, el `global_invocation_id` puede cambiar
+lo que significa que potencialmente usarías más hilos de los que necesitas o no lo suficiente.
 
 ## Buffers
 
-While I've covered buffers in the [rendering guide](../../beginner/tutorial4-buffer/),
-I'll go over them briefly here too. In WebGPU a buffer is memory on the GPU that you've
-set aside. This memory can be used for anything from vertex data, to neurons in a
-neural network. For the most part the GPU doesn't care what data the buffer contains,
-but it does care about how that data is used.
+Aunque he cubierto buffers en la [guía de renderizado](../../beginner/tutorial4-buffer/),
+también los revisaré brevemente aquí. En WebGPU un buffer es memoria en la GPU que has
+apartado. Esta memoria puede usarse para cualquier cosa desde datos de vértices hasta neuronas en una
+red neuronal. En su mayor parte a la GPU no le importa qué datos contiene el buffer,
+pero le importa cómo se usan esos datos.
 
-Here's an example of setting up an input and output buffer.
+Aquí hay un ejemplo de configuración de un buffer de entrada y salida.
 
 ```rust
     let input_buffer = device.create_buffer_init(&BufferInitDescriptor {
@@ -274,31 +274,31 @@ Here's an example of setting up an input and output buffer.
     });
 ```
 
-We specifically need the `STORAGE` usage our buffer is this shader. We can
-use `UNIFORM` for some things, but uniform buffers are more limited in what
-size they can be and they can't be modified in the shader.
+Específicamente necesitamos el uso de `STORAGE` para nuestro buffer en este shader. Podemos
+usar `UNIFORM` para algunas cosas, pero los buffers uniformes son más limitados en cuanto a
+qué tamaño pueden tener y no pueden ser modificados en el shader.
 
-## Bindgroup setup
+## Configuración de Bindgroup
 
-Again I won't go into detail about how to define bind groups here, as I've
-already done that in [the rendering guide](../../beginner/tutorial5-textures/),
-but I cover the theory. In WebGPU a bind group describes resources that can
-be used by the shader. These can be textures, buffers, samplers, etc. A
-`BindGroupLayout` defines how these resources are grouped what shaders stages
-have access to them, and how the shader will interpret the resources.
+De nuevo no entraré en detalle sobre cómo definir bind groups aquí, ya que
+ya lo hice en [la guía de renderizado](../../beginner/tutorial5-textures/),
+pero cubriré la teoría. En WebGPU un bind group describe recursos que pueden
+ser usados por el shader. Estos pueden ser texturas, buffers, samplers, etc. Un
+`BindGroupLayout` define cómo estos recursos se agrupan, qué etapas de shader
+tienen acceso a ellos, y cómo el shader interpretará los recursos.
 
-You can manually specify the `BindGroupLayout`, but WGPU can infer the layout
-based on shader code. For example:
+Puedes especificar manualmente el `BindGroupLayout`, pero WGPU puede inferir el layout
+basándose en el código del shader. Por ejemplo:
 
 ```wgsl
 @group(0) @binding(0) var<storage, read> input: array<u32>;
 @group(0) @binding(1) var<storage, read_write> output: array<u32>;
 ```
 
-WGPU interprets this as a layout with 2 entries, a read only storage buffer
-called `input` at binding 0, and a storage buffer that can be read from and
-written to called `output` at binding 1. We can easily create a bindgroup that
-satisfies this with the following code:
+WGPU interpreta esto como un layout con 2 entradas, un buffer de almacenamiento de solo lectura
+llamado `input` en la vinculación 0, y un buffer de almacenamiento que puede ser leído y
+escrito llamado `output` en la vinculación 1. Podemos crear fácilmente un bindgroup que
+satisface esto con el siguiente código:
 
 ```rust
     let bind_group = device.create_bind_group(&wgpu::BindGroupDescriptor {
@@ -317,14 +317,14 @@ satisfies this with the following code:
     });
 ```
 
-## Getting data out of the GPU
+## Obtener datos fuera de la GPU
 
-Depending on your applications needs, the data you process in a compute shader
-may stay on the the GPU as it is only used for rendering or other compute pipelines.
-If you do need to get that data from the GPU to the CPU, or if you just want to
-take a look at it, there is fortunately a way to do that.
+Dependiendo de las necesidades de tu aplicación, los datos que procesas en un compute shader
+pueden quedarse en la GPU ya que solo se usan para renderizado u otros compute pipelines.
+Si necesitas obtener esos datos de la GPU a la CPU, o si simplemente quieres
+echar un vistazo a ellos, afortunadamente hay una forma de hacerlo.
 
-The process is a little involved so let's look at the code.
+El proceso es un poco complicado, así que veamos el código.
 
 ```rust
 {
@@ -353,12 +353,12 @@ The process is a little involved so let's look at the code.
     temp_buffer.unmap();
 ```
 
-You may have noticed I used a variable called `temp_buffer` and not `output_buffer`
-in the mapping. The reason for this is that we need the buffer being mapped to have
-the `MAP_READ` usage. This usage is only compatable with the `COPY_DST` usage, meaning
-it can't have the `STORAGE` nor the `UNIFORM` usage, meaning we can't use the buffer
-in a compute shader. We get around this by creating a temporary buffer that we copy
-the `output_buffer` to, and we then map that. Here's the setup code for the `temp_buffer`:
+Es posible que hayas notado que usé una variable llamada `temp_buffer` y no `output_buffer`
+en el mapeo. La razón es que necesitamos que el buffer siendo mapeado tenga
+el uso de `MAP_READ`. Este uso solo es compatible con el uso de `COPY_DST`, lo que significa
+que no puede tener el uso de `STORAGE` ni de `UNIFORM`, lo que significa que no podemos usar el buffer
+en un compute shader. Lo evitamos creando un buffer temporal al que copiamos
+el `output_buffer`, y luego lo mapeamos. Aquí está el código de configuración para el `temp_buffer`:
 
 ```rust
     let temp_buffer = device.create_buffer(&wgpu::BufferDescriptor {
@@ -369,7 +369,7 @@ the `output_buffer` to, and we then map that. Here's the setup code for the `tem
     });
 ```
 
-We need to perform this copy before we submit the queue.
+Necesitamos realizar esta copia antes de enviar la cola.
 
 ```rust
     encoder.copy_buffer_to_buffer(&output_buffer, 0, &temp_buffer, 0, output_buffer.size());
@@ -377,13 +377,13 @@ We need to perform this copy before we submit the queue.
     queue.submit([encoder.finish()]);
 ```
 
-## Conclusion
+## Conclusión
 
-That's it. Not too difficult especially compared to setting up a render pipeline. Now that
-we know how to use a compute pipeline we can actually start to do more interesting things.
-This guide can't possible cover all the ways to use compute shaders, but I plan to cover
-some of the core building blocks you need to build most algorithms. After that you can take
-the concepts and apply them to your own projects!
+Eso es todo. No es demasiado difícil, especialmente comparado con configurar un render pipeline. Ahora que
+sabemos cómo usar un compute pipeline podemos realmente comenzar a hacer cosas más interesantes.
+Esta guía no puede cubrir posiblemente todas las formas de usar compute shaders, pero planeo cubrir
+algunos de los bloques de construcción centrales que necesitas para construir la mayoría de algoritmos. Después de eso puedes tomar
+los conceptos y aplicarlos a tus propios proyectos!
 
 ## Demo
 

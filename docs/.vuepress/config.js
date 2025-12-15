@@ -1,6 +1,6 @@
 module.exports = {
-    base: '/learn-wgpu/',
-    title: 'Learn Wgpu',
+    base: '/learn-wgpu-es/',
+    title: 'Learn Wgpu - Español',
     theme: 'thindark',
     plugins: {
         'vuepress-plugin-code-copy': true,
@@ -10,7 +10,7 @@ module.exports = {
         },
     },
     themeConfig: {
-        domain: '/learn-wgpu',
+        domain: '/learn-wgpu-es',
         author: {
             name: 'Benjamin Hansen',
             twitter: 'https://twitter.com/sotrh760',

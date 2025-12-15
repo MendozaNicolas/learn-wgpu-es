@@ -1,26 +1,26 @@
-# The Depth Buffer
+# El Búfer de Profundidad
 
-Let's take a closer look at the last example from an angle.
+Echemos un vistazo más cercano al último ejemplo desde un ángulo.
 
 ![depth_problems.png](./depth_problems.png)
 
-Models that should be in the back are getting rendered ahead of those in the front. This is caused by the draw order. By default, pixel data from a new object will replace old pixel data.
+Los modelos que deberían estar atrás se están renderizando antes que los que están al frente. Esto es causado por el orden de dibujo. Por defecto, los datos de píxeles de un objeto nuevo reemplazan los datos de píxeles antiguos.
 
-There are two ways to solve this: sort the data from back to front or use what's known as a depth buffer.
+Hay dos formas de resolver esto: ordenar los datos de atrás hacia adelante o usar lo que se conoce como un búfer de profundidad.
 
-## Sorting from back to front
+## Ordenar de atrás hacia adelante
 
-This is the go-to method for 2D rendering as it's pretty easy to know what's supposed to go in front of what. You can just use the z-order. In 3d rendering, it gets a little trickier because the order of the objects changes based on the camera angle.
+Este es el método más común para renderizado 2D ya que es bastante fácil saber qué debe estar al frente de qué. Puedes simplemente usar el orden z. En renderizado 3D, se vuelve un poco más complicado porque el orden de los objetos cambia según el ángulo de la cámara.
 
-A simple way of doing this is to sort all the objects by their distance from the camera's position. There are flaws with this method, though, as when a large object is behind a small object, parts of the large object that should be in front of the small object will be rendered behind it. We'll also run into issues with objects that overlap *themselves*.
+Una forma simple de hacer esto es ordenar todos los objetos por su distancia desde la posición de la cámara. Sin embargo, este método tiene defectos, como cuando un objeto grande está detrás de un objeto pequeño, partes del objeto grande que deberían estar al frente del objeto pequeño se renderizarán detrás de él. También nos encontraremos con problemas con objetos que se superponen *a sí mismos*.
 
-If we want to do this properly, we need to have pixel-level precision. That's where a *depth buffer* comes in.
+Si queremos hacer esto correctamente, necesitamos tener precisión a nivel de píxel. Ahí es donde entra un *búfer de profundidad*.
 
-## A pixels depth
+## Profundidad de un píxel
 
-A depth buffer is a black and white texture that stores the z-coordinate of rendered pixels. Wgpu can use this when drawing new pixels to determine whether to replace or keep the data. This technique is called depth testing. This will fix our draw order problem without needing us to sort our objects!
+Un búfer de profundidad es una textura en blanco y negro que almacena la coordenada z de los píxeles renderizados. Wgpu puede usar esto al dibujar nuevos píxeles para determinar si debe reemplazar o mantener los datos. Esta técnica se llama prueba de profundidad. ¡Esto solucionará nuestro problema de orden de dibujo sin necesidad de ordenar nuestros objetos!
 
-Let's make a function to create the depth texture in `texture.rs`.
+Creemos una función para crear la textura de profundidad en `texture.rs`.
 
 ```rust
 impl Texture {
@@ -66,19 +66,19 @@ impl Texture {
 }
 ```
 
-1. We need the DEPTH_FORMAT for creating the depth stage of the `render_pipeline` and for creating the depth texture itself.
-2. Our depth texture needs to be the same size as our screen if we want things to render correctly. We can use our `config` to ensure our depth texture is the same size as our surface textures.
-3. Since we are rendering to this texture, we need to add the `RENDER_ATTACHMENT` flag to it.
-4. We technically don't *need* a sampler for a depth texture, but our `Texture` struct requires it, and we need one if we ever want to sample it.
-5. If we do decide to render our depth texture, we need to use `CompareFunction::LessEqual`. This is due to how the `sampler_comparison` and `textureSampleCompare()` interact with the `texture()` function in GLSL.
+1. Necesitamos el DEPTH_FORMAT para crear la etapa de profundidad de la `render_pipeline` y para crear la textura de profundidad en sí.
+2. Nuestra textura de profundidad debe tener el mismo tamaño que nuestra pantalla si queremos que las cosas se rendericen correctamente. Podemos usar nuestra `config` para asegurar que nuestra textura de profundidad tenga el mismo tamaño que nuestras texturas de superficie.
+3. Como estamos renderizando a esta textura, necesitamos agregar la bandera `RENDER_ATTACHMENT` a ella.
+4. Técnicamente no *necesitamos* un sampler para una textura de profundidad, pero nuestra estructura `Texture` lo requiere, y necesitamos uno si alguna vez queremos muestrearla.
+5. Si decidimos renderizar nuestra textura de profundidad, necesitamos usar `CompareFunction::LessEqual`. Esto se debe a cómo `sampler_comparison` y `textureSampleCompare()` interactúan con la función `texture()` en GLSL.
 
-We create our `depth_texture` in `State::new()`.
+Creamos nuestra `depth_texture` en `State::new()`.
 
 ```rust
 let depth_texture = texture::Texture::create_depth_texture(&device, &config, "depth_texture");
 ```
 
-We need to modify our `render_pipeline` to allow depth testing.
+Necesitamos modificar nuestra `render_pipeline` para permitir la prueba de profundidad.
 
 ```rust
 let render_pipeline = device.create_render_pipeline(&wgpu::RenderPipelineDescriptor {
@@ -94,7 +94,7 @@ let render_pipeline = device.create_render_pipeline(&wgpu::RenderPipelineDescrip
 });
 ```
 
-1. The `depth_compare` function tells us when to discard a new pixel. Using `LESS` means pixels will be drawn front to back. Here are the other possible values for a [CompareFunction](https://docs.rs/wgpu/latest/wgpu/enum.CompareFunction.html) that you can use:
+1. La función `depth_compare` nos dice cuándo descartar un píxel nuevo. Usar `LESS` significa que los píxeles se dibujarán de adelante hacia atrás. Aquí están los otros valores posibles para un [CompareFunction](https://docs.rs/wgpu/latest/wgpu/enum.CompareFunction.html) que puedes usar:
 
 ```rust
 #[repr(C)]
@@ -113,9 +113,9 @@ pub enum CompareFunction {
 }
 ```
 
-2. There's another type of buffer called a stencil buffer. It's common practice to store the stencil buffer and depth buffer in the same texture. These fields control values for stencil testing. We'll use default values since we aren't using a stencil buffer. We'll cover stencil buffers [later](../../todo).
+2. Hay otro tipo de búfer llamado búfer de plantilla. Es una práctica común almacenar el búfer de plantilla y el búfer de profundidad en la misma textura. Estos campos controlan los valores para las pruebas de plantilla. Usaremos valores predeterminados ya que no estamos usando un búfer de plantilla. Cubriremos los búferes de plantilla [más adelante](../../todo).
 
-Don't forget to store the `depth_texture` in `State`.
+No olvides almacenar la `depth_texture` en `State`.
 
 ```rust
 pub struct State {
@@ -135,7 +135,7 @@ async fn new(window: Window) -> Self {
 }
 ```
 
-We need to remember to change the `resize()` method to create a new `depth_texture` and `depth_texture_view`.
+Necesitamos recordar cambiar el método `resize()` para crear una nueva `depth_texture` y `depth_texture_view`.
 
 ```rust
 fn resize(&mut self, width: u32, height: u32) {
@@ -147,9 +147,9 @@ fn resize(&mut self, width: u32, height: u32) {
 }
 ```
 
-Make sure you update the `depth_texture` *after* you update `config`. If you don't, your program will crash as the `depth_texture` will be a different size than the `surface` texture.
+Asegúrate de actualizar la `depth_texture` *después* de actualizar `config`. Si no lo haces, tu programa se bloqueará porque la `depth_texture` tendrá un tamaño diferente al de la textura `surface`.
 
-The last change we need to make is in the `render()` function. We've created the `depth_texture`, but we're not currently using it. We use it by attaching it to the `depth_stencil_attachment` of a render pass.
+El último cambio que necesitamos hacer es en la función `render()`. Hemos creado la `depth_texture`, pero actualmente no la estamos usando. La usamos adjuntándola a la `depth_stencil_attachment` de una pasada de renderizado.
 
 ```rust
 let mut render_pass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
@@ -165,7 +165,7 @@ let mut render_pass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
 });
 ```
 
-And that's all we have to do! No shader code is needed! If you run the application, the depth issues will be fixed.
+¡Y eso es todo lo que tenemos que hacer! ¡No se necesita código de shader! Si ejecutas la aplicación, los problemas de profundidad se solucionarán.
 
 ![forest_fixed.png](./forest_fixed.png)
 
@@ -175,6 +175,6 @@ And that's all we have to do! No shader code is needed! If you run the applicati
 
 <AutoGithubLink/>
 
-## Challenge
+## Desafío
 
-Since the depth buffer is a texture, we can sample it in the shader. Because it's a depth texture, we'll have to use the `sampler_comparison` uniform type and the `textureSampleCompare` function instead of `sampler` and `sampler2D` respectively. Create a bind group for the depth texture (or reuse an existing one), and render it to the screen.
+Como el búfer de profundidad es una textura, podemos muestrearla en el shader. Porque es una textura de profundidad, tendremos que usar el tipo de uniform `sampler_comparison` y la función `textureSampleCompare` en lugar de `sampler` y `sampler2D` respectivamente. Crea un grupo de enlace para la textura de profundidad (o reutiliza uno existente), y renderízala en la pantalla.

@@ -1,12 +1,12 @@
-# Instancing
+# Instanciación
 
-Our scene right now is very simple: we have one object centered at (0,0,0). What if we wanted more objects? This is where instancing comes in.
+Nuestra escena en este momento es muy simple: tenemos un objeto centrado en (0,0,0). ¿Qué pasa si queremos más objetos? Aquí es donde entra en juego la instanciación.
 
-Instancing allows us to draw the same object multiple times with different properties (position, orientation, size, color, etc.). There are multiple ways of doing instancing. One way would be to modify the uniform buffer to include these properties and then update it before we draw each instance of our object.
+La instanciación nos permite dibujar el mismo objeto varias veces con propiedades diferentes (posición, orientación, tamaño, color, etc.). Hay múltiples formas de hacer instanciación. Una forma sería modificar el búfer uniforme para incluir estas propiedades y luego actualizarlo antes de dibujar cada instancia de nuestro objeto.
 
-We don't want to use this method for performance reasons. Updating the uniform buffer for each instance would require multiple buffer copies for each frame. On top of that, our method to update the uniform buffer currently requires us to create a new buffer to store the updated data. That's a lot of time wasted between draw calls.
+No queremos usar este método por razones de rendimiento. Actualizar el búfer uniforme para cada instancia requeriría múltiples copias de búfer por fotograma. Además, nuestro método actual para actualizar el búfer uniforme nos requiere crear un nuevo búfer para almacenar los datos actualizados. Eso es mucho tiempo desperdiciado entre llamadas de dibujo.
 
-If we look at the parameters for the `draw_indexed` function [in the wgpu docs](https://docs.rs/wgpu/latest/wgpu/struct.RenderPass.html#method.draw_indexed), we can see a solution to our problem.
+Si miramos los parámetros de la función `draw_indexed` [en la documentación de wgpu](https://docs.rs/wgpu/latest/wgpu/struct.RenderPass.html#method.draw_indexed), podemos ver una solución a nuestro problema.
 
 ```rust
 pub fn draw_indexed(
@@ -17,15 +17,15 @@ pub fn draw_indexed(
 )
 ```
 
-The `instances` parameter takes a `Range<u32>`. This parameter tells the GPU how many copies, or instances, of the model we want to draw. Currently, we are specifying `0..1`, which instructs the GPU to draw our model once and then stop. If we used `0..5`, our code would draw five instances.
+El parámetro `instances` toma un `Range<u32>`. Este parámetro le dice a la GPU cuántas copias, o instancias, del modelo queremos dibujar. Actualmente, estamos especificando `0..1`, lo que instruye a la GPU a dibujar nuestro modelo una vez y luego detener. Si usáramos `0..5`, nuestro código dibujaría cinco instancias.
 
-The fact that `instances` is a `Range<u32>` may seem weird, as using `1..2` for instances would still draw one instance of our object. It seems like it would be simpler just to use a `u32`, right? The reason it's a range is that sometimes we don't want to draw **all** of our objects. Sometimes, we want to draw a selection of them because others are not in the frame, or we are debugging and want to look at a particular set of instances.
+El hecho de que `instances` sea un `Range<u32>` puede parecer raro, ya que usar `1..2` para instancias seguiría dibujando una instancia de nuestro objeto. Parece que sería más simple simplemente usar un `u32`, ¿verdad? La razón por la que es un rango es que a veces no queremos dibujar **todos** nuestros objetos. A veces queremos dibujar una selección de ellos porque otros no están en el marco, o estamos depurando y queremos mirar un conjunto particular de instancias.
 
-Ok, now we know how to draw multiple instances of an object. How do we tell wgpu what particular instance to draw? We are going to use something known as an instance buffer.
+Bien, ahora sabemos cómo dibujar múltiples instancias de un objeto. ¿Cómo le decimos a wgpu qué instancia particular dibujar? Vamos a usar algo conocido como búfer de instancias.
 
-## The Instance Buffer
+## El Búfer de Instancias
 
-We'll create an instance buffer similarly to how we create a uniform buffer. First, we'll create a struct called `Instance`.
+Crearemos un búfer de instancias de manera similar a cómo creamos un búfer uniforme. Primero, crearemos una estructura llamada `Instance`.
 
 ```rust
 // lib.rs
@@ -40,11 +40,11 @@ struct Instance {
 
 <div class="note">
 
-A `Quaternion` is a mathematical structure often used to represent rotation. The math behind them is beyond me (it involves imaginary numbers and 4D space), so I won't be covering them here. If you really want to dive into them [here's a Wolfram Alpha article](https://mathworld.wolfram.com/Quaternion.html).
+Un `Quaternion` es una estructura matemática que se usa frecuentemente para representar rotaciones. Las matemáticas detrás de ellas están fuera de mi alcance (involucran números imaginarios y espacio 4D), así que no las cubriré aquí. Si realmente quieres profundizar en ellas [aquí hay un artículo de Wolfram Alpha](https://mathworld.wolfram.com/Quaternion.html).
 
 </div>
 
-Using these values directly in the shader would be a pain, as quaternions don't have a WGSL analog. I don't feel like writing the math in the shader, so we'll convert the `Instance` data into a matrix and store it in a struct called `InstanceRaw`.
+Usar estos valores directamente en el sombreador sería incómodo, ya que los cuaterniones no tienen un análogo en WGSL. No me siento como escribir las matemáticas en el sombreador, así que convertiremos los datos de `Instance` en una matriz y los almacenaremos en una estructura llamada `InstanceRaw`.
 
 ```rust
 // NEW!
@@ -55,9 +55,9 @@ struct InstanceRaw {
 }
 ```
 
-This is the data that will go into the `wgpu::Buffer`. We keep these separate so that we can update the `Instance` as much as we want without needing to mess with matrices. We only need to update the raw data before we draw.
+Estos son los datos que irán en `wgpu::Buffer`. Los mantenemos separados para que podamos actualizar `Instance` tanto como queramos sin necesidad de lidiar con matrices. Solo necesitamos actualizar los datos sin procesar antes de dibujar.
 
-Let's create a method on `Instance` to convert to `InstanceRaw`.
+Crearemos un método en `Instance` para convertir a `InstanceRaw`.
 
 ```rust
 // NEW!
@@ -70,7 +70,7 @@ impl Instance {
 }
 ```
 
-Now we need to add two fields to `State`: `instances` and `instance_buffer`.
+Ahora necesitamos añadir dos campos a `State`: `instances` e `instance_buffer`.
 
 ```rust
 pub struct State {
@@ -79,22 +79,22 @@ pub struct State {
 }
 ```
 
-The `cgmath` crate uses traits to provide common mathematical methods across its structs, such as `Vector3`, which must be imported before these methods can be called. For convenience, the `prelude` module within the crate provides the most common of these extension crates when it is imported.
+El crate `cgmath` usa características (traits) para proporcionar métodos matemáticos comunes en sus estructuras, como `Vector3`, que deben importarse antes de que se puedan llamar estos métodos. Por conveniencia, el módulo `prelude` dentro del crate proporciona los más comunes de estos crates de extensión cuando se importa.
 
-To import this prelude module, put this line near the top of `lib.rs`.
+Para importar este módulo prelude, pon esta línea cerca de la parte superior de `lib.rs`.
 
 ```rust
 use cgmath::prelude::*;
 ```
 
-We'll create the instances in `new()`. We'll use some constants to simplify things. We'll display our instances in 10 rows of 10, and they'll be spaced evenly apart.
+Crearemos las instancias en `new()`. Usaremos algunas constantes para simplificar las cosas. Mostraremos nuestras instancias en 10 filas de 10, y estarán espaciadas uniformemente.
 
 ```rust
 const NUM_INSTANCES_PER_ROW: u32 = 10;
 const INSTANCE_DISPLACEMENT: cgmath::Vector3<f32> = cgmath::Vector3::new(NUM_INSTANCES_PER_ROW as f32 * 0.5, 0.0, NUM_INSTANCES_PER_ROW as f32 * 0.5);
 ```
 
-Now, we can create the actual instances.
+Ahora podemos crear las instancias reales.
 
 ```rust
 impl State {
@@ -122,7 +122,7 @@ impl State {
 }
 ```
 
-Now that we have our data, we can create the actual `instance_buffer`.
+Ahora que tenemos nuestros datos, podemos crear el `instance_buffer` real.
 
 ```rust
 let instance_data = instances.iter().map(Instance::to_raw).collect::<Vec<_>>();
@@ -135,7 +135,7 @@ let instance_buffer = device.create_buffer_init(
 );
 ```
 
-We're going to need to create a new `VertexBufferLayout` for `InstanceRaw`.
+Vamos a necesitar crear un nuevo `VertexBufferLayout` para `InstanceRaw`.
 
 ```rust
 impl InstanceRaw {
@@ -178,7 +178,7 @@ impl InstanceRaw {
 }
 ```
 
-We need to add this descriptor to the render pipeline so that we can use it when we render.
+Necesitamos añadir este descriptor al pipeline de renderizado para que podamos usarlo cuando renderizamos.
 
 ```rust
 let render_pipeline = device.create_render_pipeline(&wgpu::RenderPipelineDescriptor {
@@ -192,7 +192,7 @@ let render_pipeline = device.create_render_pipeline(&wgpu::RenderPipelineDescrip
 });
 ```
 
-Don't forget to return our new variables!
+¡No olvides retornar nuestras nuevas variables!
 
 ```rust
 Self {
@@ -203,7 +203,7 @@ Self {
 }
 ```
 
-The last change we need to make is in the `render()` method. We need to bind our `instance_buffer` and change the range we're using in `draw_indexed()` to include the number of instances.
+El último cambio que necesitamos hacer es en el método `render()`. Necesitamos vincular nuestro `instance_buffer` y cambiar el rango que usamos en `draw_indexed()` para incluir el número de instancias.
 
 ```rust
 render_pass.set_pipeline(&self.render_pipeline);
@@ -220,11 +220,11 @@ render_pass.draw_indexed(0..self.num_indices, 0, 0..self.instances.len() as _);
 
 <div class="warning">
 
-Make sure that if you add new instances to the `Vec`, you recreate the `instance_buffer` as well as `camera_bind_group`. Otherwise, your new instances won't show up correctly.
+Asegúrate de que si añades nuevas instancias al `Vec`, también recrees el `instance_buffer` y `camera_bind_group`. De lo contrario, tus nuevas instancias no aparecerán correctamente.
 
 </div>
 
-We need to reference the parts of our new matrix in `shader.wgsl` so that we can use it for our instances. Add the following to the top of `shader.wgsl`.
+Necesitamos referenciar las partes de nuestra nueva matriz en `shader.wgsl` para que podamos usarla para nuestras instancias. Añade lo siguiente en la parte superior de `shader.wgsl`.
 
 ```wgsl
 struct InstanceInput {
@@ -235,7 +235,7 @@ struct InstanceInput {
 };
 ```
 
-We need to reassemble the matrix before we can use it.
+Necesitamos rearmar la matriz antes de poder usarla.
 
 ```wgsl
 @vertex
@@ -253,7 +253,7 @@ fn vs_main(
 }
 ```
 
-We'll apply the `model_matrix` before we apply `camera_uniform.view_proj`. We do this because the `camera_uniform.view_proj` changes the coordinate system from `world space` to `camera space`. Our `model_matrix` is a `world space` transformation, so we don't want to be in `camera space` when using it.
+Aplicaremos `model_matrix` antes de aplicar `camera_uniform.view_proj`. Hacemos esto porque `camera_uniform.view_proj` cambia el sistema de coordenadas del `world space` al `camera space`. Nuestro `model_matrix` es una transformación del `world space`, así que no queremos estar en `camera space` cuando lo usamos.
 
 ```wgsl
 @vertex
@@ -269,16 +269,16 @@ fn vs_main(
 }
 ```
 
-With all that done, we should have a forest of trees!
+¡Con todo eso hecho, deberíamos tener un bosque de árboles!
 
 ![./forest.png](./forest.png)
 
-## Demo
+## Demostración
 
 <WasmExample example="tutorial7_instancing"></WasmExample>
 
 <AutoGithubLink/>
 
-## Challenge
+## Desafío
 
-Modify the position and/or rotation of the instances every frame.
+Modifica la posición y/o rotación de las instancias en cada fotograma.

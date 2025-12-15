@@ -1,10 +1,10 @@
-# Wgpu without a window
+# Wgpu sin ventana
 
-Sometimes we just want to leverage the gpu. Maybe we want to crunch a large set of numbers in parallel. Maybe we're working on a 3D movie, and need to create a realistic-looking scene with path tracing. Maybe we're mining a cryptocurrency. In all these situations, we don't necessarily *need* to see what's going on.
+A veces simplemente queremos aprovechar la gpu. Tal vez queramos procesar un gran conjunto de números en paralelo. Tal vez estamos trabajando en una película 3D y necesitamos crear una escena de apariencia realista con path tracing. Tal vez estamos minando una criptomoneda. En todas estas situaciones, no necesariamente *necesitamos* ver qué está sucediendo.
 
-## So what do we need to do?
+## Entonces, ¿qué necesitamos hacer?
 
-It's actually quite simple. We don't *need* a window to create an `Instance`, we don't *need* a window to select an `Adapter`, nor do we *need* a window to create a `Device`. We only needed the window to create a `Surface` which we needed to create the `SwapChain`. Once we have a `Device`, we have all we need to start sending commands to the gpu.
+Es realmente bastante simple. No *necesitamos* una ventana para crear una `Instance`, no *necesitamos* una ventana para seleccionar un `Adapter`, ni *necesitamos* una ventana para crear un `Device`. Solo necesitábamos la ventana para crear una `Surface` que necesitábamos para crear el `SwapChain`. Una vez que tenemos un `Device`, tenemos todo lo que necesitamos para comenzar a enviar comandos a la gpu.
 
 ```rust
 let adapter = instance
@@ -20,9 +20,9 @@ let (device, queue) = adapter
     .unwrap();
 ```
 
-## A triangle without a window
+## Un triángulo sin ventana
 
-Now we've talked about not needing to see what the gpu is doing, but we do need to see the results at some point. If we look back to talking about the [surface](/beginner/tutorial2-surface/#render) we see that we use `surface.get_current_texture()` to grab a texture to draw to. We'll skip that step by creating the texture ourselves. One thing to note here is we need to specify `wgpu::TextureFormat::Rgba8UnormSrgb` to `format` instead of `surface.get_preferred_format(&adapter)` since PNG uses RGBA, not BGRA.
+Ahora hemos hablado sobre no necesitar ver qué está haciendo la gpu, pero necesitamos ver los resultados en algún momento. Si miramos atrás la discusión sobre la [surface](/beginner/tutorial2-surface/#render) vemos que usamos `surface.get_current_texture()` para obtener una textura para dibujar. Saltaremos ese paso creando la textura nosotros mismos. Una cosa a tener en cuenta aquí es que necesitamos especificar `wgpu::TextureFormat::Rgba8UnormSrgb` al `format` en lugar de `surface.get_preferred_format(&adapter)` ya que PNG usa RGBA, no BGRA.
 
 ```rust
 let texture_size = 256u32;
@@ -46,9 +46,9 @@ let texture = device.create_texture(&texture_desc);
 let texture_view = texture.create_view(&Default::default());
 ```
 
-We're using `TextureUsages::RENDER_ATTACHMENT` so wgpu can render to our texture. The `TextureUsages::COPY_SRC` is so we can pull data out of the texture so we can save it to a file.
+Estamos usando `TextureUsages::RENDER_ATTACHMENT` para que wgpu pueda renderizar a nuestra textura. El `TextureUsages::COPY_SRC` es para que podamos extraer datos de la textura para poder guardarla en un archivo.
 
-While we can use this texture to draw our triangle, we need some way to get at the pixels inside it. Back in the [texture tutorial](/beginner/tutorial5-textures/) we used a buffer to load color data from a file that we then copied into our buffer. Now we are going to do the reverse: copy data into a buffer from our texture to save into a file. We'll need a buffer big enough for our data.
+Aunque podemos usar esta textura para dibujar nuestro triángulo, necesitamos alguna forma de acceder a los píxeles dentro de ella. En el [tutorial de texturas](/beginner/tutorial5-textures/) usamos un búfer para cargar datos de color desde un archivo que luego copiamos en nuestro búfer. Ahora vamos a hacer lo inverso: copiar datos a un búfer desde nuestra textura para guardar en un archivo. Necesitaremos un búfer lo suficientemente grande para nuestros datos.
 
 ```rust
 // we need to store this for later
@@ -66,7 +66,7 @@ let output_buffer_desc = wgpu::BufferDescriptor {
 let output_buffer = device.create_buffer(&output_buffer_desc);
 ```
 
-Now that we have something to draw to, let's make something to draw. Since we're just drawing a triangle, let's grab the shader code from the [pipeline tutorial](/beginner/tutorial3-pipeline/#writing-the-shaders).
+Ahora que tenemos algo en lo que dibujar, hagamos algo para dibujar. Como solo estamos dibujando un triángulo, tomemos el código del shader del [tutorial de pipeline](/beginner/tutorial3-pipeline/#writing-the-shaders).
 
 ```glsl
 // shader.vert
@@ -94,7 +94,7 @@ void main() {
 }
 ```
 
-Update dependencies to support SPIR-V module.
+Actualiza las dependencias para soportar módulos SPIR-V.
 
 ```toml
 [dependencies]
@@ -104,7 +104,7 @@ wgpu = { version = "27.0.0", features = ["spirv"] }
 pollster = "0.3"
 ```
 
-Using that we'll create a simple `RenderPipeline`.
+Usando eso crearemos un simple `RenderPipeline`.
 
 ```rust
 let vs_src = include_str!("shader.vert");
@@ -182,7 +182,7 @@ let render_pipeline = device.create_render_pipeline(&wgpu::RenderPipelineDescrip
 });
 ```
 
-We're going to need an encoder, so let's do that.
+Vamos a necesitar un encoder, así que hagámoslo.
 
 ```rust
 let mut encoder = device.create_command_encoder(&wgpu::CommandEncoderDescriptor {
@@ -190,7 +190,7 @@ let mut encoder = device.create_command_encoder(&wgpu::CommandEncoderDescriptor 
 });
 ```
 
-The `RenderPass` is where things get interesting. A render pass requires at least one color attachment. A color attachment requires a `TextureView` to attach to. We used to use a texture from `SwapChain` for this, but any `TextureView` will do, including our `texture_view`.
+El `RenderPass` es donde las cosas se ponen interesantes. Un render pass requiere al menos un color attachment. Un color attachment requiere un `TextureView` para adjuntar. Solíamos usar una textura del `SwapChain` para esto, pero cualquier `TextureView` funcionará, incluida nuestra `texture_view`.
 
 ```rust
 {
@@ -220,7 +220,7 @@ The `RenderPass` is where things get interesting. A render pass requires at leas
 }
 ```
 
-There's not much we can do with the data when it's stuck in a `Texture`, so let's copy it into our `output_buffer`.
+No hay mucho que podamos hacer con los datos cuando están atrapados en una `Texture`, así que copiémoslos en nuestro `output_buffer`.
 
 ```rust
 encoder.copy_texture_to_buffer(
@@ -242,15 +242,15 @@ encoder.copy_texture_to_buffer(
 );
 ```
 
-Now that we've made all our commands, let's submit them to the gpu.
+Ahora que hemos hecho todos nuestros comandos, enviémoslos a la gpu.
 
 ```rust
 queue.submit(Some(encoder.finish()));
 ```
 
-## Getting data out of a buffer
+## Extrayendo datos de un búfer
 
-In order to get the data out of the buffer, we need to first map it, then we can get a `BufferView` that we can treat like a `&[u8]`.
+Para obtener los datos fuera del búfer, primero necesitamos mapearlo, entonces podemos obtener una `BufferView` que podemos tratar como `&[u8]`.
 
 ```rust
 // We need to scope the mapping variables so that we can
@@ -280,17 +280,17 @@ output_buffer.unmap();
 
 <div class="note">
 
-I used [futures-intrusive](https://docs.rs/futures-intrusive) as that's the crate they use in the [exampls on the wgpu repo](https://github.com/gfx-rs/wgpu/tree/master/wgpu/examples/capture).
+Usé [futures-intrusive](https://docs.rs/futures-intrusive) ya que es el crate que usan en los [ejemplos en el repositorio de wgpu](https://github.com/gfx-rs/wgpu/tree/master/wgpu/examples/capture).
 
 </div>
 
-## Main is not asyncable
+## Main no es asincrónico
 
-The `main()` method can't return a future, so we can't use the `async` keyword. We'll get around this by putting our code into a different function so that we can block it in `main()`. You'll need to use a crate that can poll futures such as the [pollster crate](https://docs.rs/pollster).
+El método `main()` no puede retornar un future, así que no podemos usar la palabra clave `async`. Lo solucionaremos poniendo nuestro código en una función diferente para que podamos bloquearlo en `main()`. Necesitarás usar un crate que pueda sondear futures como el [crate pollster](https://docs.rs/pollster).
 
 <div class="note">
 
-There are crates such as [async-std](https://docs.rs/async-std), and [tokio](https://docs.rs/tokio) that you can use to annotate `main()` so it can be async. I opted not to do that as both those crates are a little more hefty for this project. You're welcome to use whatever async setup you like :slightly_smiling_face:
+Hay crates como [async-std](https://docs.rs/async-std) y [tokio](https://docs.rs/tokio) que puedes usar para anotar `main()` para que sea asincrónico. Opté por no hacerlo ya que ambos crates son un poco más pesados para este proyecto. Eres bienvenido a usar cualquier configuración asincrónica que prefieras :slightly_smiling_face:
 
 </div>
 
@@ -304,7 +304,7 @@ fn main() {
 }
 ```
 
-With all that you should have an image like this.
+Con todo eso, deberías tener una imagen como esta.
 
 ![a brown triangle](./image-output.png)
 

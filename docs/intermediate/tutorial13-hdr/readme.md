@@ -1,26 +1,26 @@
-# High Dynamic Range Rendering
+# Renderizado de Alto Rango Dinámico
 
-Up to this point, we've been using the sRGB colorspace to render our scene. While this is fine, it limits what we can do with our lighting. We are using `TextureFormat::Bgra8UnormSrgb` (on most systems) for our surface texture. This means we have 8 bits for each red, green, blue and alpha channel. While the channels are stored as integers between 0 and 255 inclusively, they get converted to and from floating point values between 0.0 and 1.0. The TL:DR of this is that using 8-bit textures, we only get 256 possible values in each channel.
+Hasta este punto, hemos estado usando el espacio de color sRGB para renderizar nuestra escena. Si bien esto está bien, limita lo que podemos hacer con nuestro sistema de iluminación. Estamos usando `TextureFormat::Bgra8UnormSrgb` (en la mayoría de los sistemas) para nuestra textura de superficie. Esto significa que tenemos 8 bits para cada canal de rojo, verde, azul y alfa. Si bien los canales se almacenan como números enteros entre 0 y 255 inclusive, se convierten a y desde valores de punto flotante entre 0.0 y 1.0. El resumen es que usando texturas de 8 bits, solo obtenemos 256 valores posibles en cada canal.
 
-The kicker with this is most of the precision gets used to represent darker values of the scene. This means that bright objects like light bulbs have the same value as exceedingly bright objects like the sun. This inaccuracy makes realistic lighting difficult to do right. Because of this, we are going to switch our rendering system to use high dynamic range in order to give our scene more flexibility and enable us to leverage more advanced techniques such as Physically Based Rendering.
+El problema con esto es que la mayoría de la precisión se utiliza para representar valores más oscuros de la escena. Esto significa que objetos brillantes como bombillas tienen el mismo valor que objetos extremadamente brillantes como el sol. Esta inexactitud hace que la iluminación realista sea difícil de hacer correctamente. Por esta razón, vamos a cambiar nuestro sistema de renderizado para usar alto rango dinámico para dar a nuestra escena más flexibilidad y permitirnos aprovechar técnicas más avanzadas como Renderizado Basado en Física.
 
-## What is High Dynamic Range?
+## ¿Qué es el Alto Rango Dinámico?
 
-In layman's terms, a High Dynamic Range texture is a texture with more bits per pixel. In addition to this, HDR textures are stored as floating point values instead of integer values. This means that the texture can have brightness values greater than 1.0, meaning you can have a dynamic range of brighter objects.
+En términos simples, una textura de Alto Rango Dinámico es una textura con más bits por píxel. Además de esto, las texturas HDR se almacenan como valores de punto flotante en lugar de valores enteros. Esto significa que la textura puede tener valores de brillo mayores a 1.0, lo que significa que puedes tener un rango dinámico de objetos más brillantes.
 
-## Switching to HDR
+## Cambio a HDR
 
-As of writing, wgpu doesn't allow us to use a floating point format such as `TextureFormat::Rgba16Float` as the surface texture format (not all monitors support that anyway), so we will have to render our scene in an HDR format, then convert the values to a supported format, such as `TextureFormat::Bgra8UnormSrgb` using a technique called tonemapping.
+En el momento de escribir esto, wgpu no nos permite usar un formato de punto flotante como `TextureFormat::Rgba16Float` como formato de textura de superficie (no todos los monitores lo soportan de todas formas), así que tendremos que renderizar nuestra escena en un formato HDR y luego convertir los valores a un formato soportado, como `TextureFormat::Bgra8UnormSrgb` usando una técnica llamada mapeo de tonos.
 
 <div class="note">
 
-There are some talks about implementing HDR surface texture support in wgpu. Here is a GitHub issue if you want to contribute to that effort: https://github.com/gfx-rs/wgpu/issues/2920
+Hay algunas conversaciones sobre la implementación de soporte de textura de superficie HDR en wgpu. Aquí hay un problema de GitHub si deseas contribuir a ese esfuerzo: https://github.com/gfx-rs/wgpu/issues/2920
 
 </div>
 
-Before we do that, though, we need to switch to using an HDR texture for rendering.
+Antes de hacer eso, sin embargo, necesitamos cambiar a usar una textura HDR para renderizar.
 
-To start, we'll create a file called `hdr.rs` and put some code in it:
+Para empezar, crearemos un archivo llamado `hdr.rs` y colocaremos algo de código en él:
 
 ```rust
 use wgpu::Operations;
@@ -186,7 +186,7 @@ impl HdrPipeline {
 }
 ```
 
-You may have noticed that we added a new parameter to `create_render_pipeline`. Here a the changes to that function:
+Quizás hayas notado que agregamos un nuevo parámetro a `create_render_pipeline`. Aquí están los cambios a esa función:
 
 ```rust
 fn create_render_pipeline(
@@ -211,11 +211,11 @@ fn create_render_pipeline(
 }
 ```
 
-## Tonemapping
+## Mapeo de Tonos
 
-The process of tonemapping is taking an HDR image and converting it to a Standard Dynamic Range (SDR), which is usually sRGB. The exact tonemapping curve you use is ultimately up to your artistic needs, but for this tutorial, we'll use a popular one known as the Academy Color Encoding System or ACES used throughout the game industry as well as the film industry.
+El proceso de mapeo de tonos es tomar una imagen HDR y convertirla a un Rango Dinámico Estándar (SDR), que generalmente es sRGB. La curva exacta de mapeo de tonos que uses depende en última instancia de tus necesidades artísticas, pero para este tutorial, usaremos una popular conocida como el Sistema de Codificación de Color de la Academia o ACES utilizado en toda la industria de videojuegos y la industria cinematográfica.
 
-With that, let's jump into the the shader. Create a file called `hdr.wgsl` and add the following code:
+Con eso, saltemos al shader. Crea un archivo llamado `hdr.wgsl` y agrega el siguiente código:
 
 ```wgsl
 // Maps HDR values to linear values
@@ -275,42 +275,42 @@ fn fs_main(vs: VertexOutput) -> @location(0) vec4<f32> {
 }
 ```
 
-With those in place, we can start using our HDR texture in our core render pipeline. First, we need to add the new `HdrPipeline` to `State`:
+Con eso en su lugar, podemos empezar a usar nuestra textura HDR en nuestra tubería de renderizado principal. Primero, necesitamos agregar el nuevo `HdrPipeline` a `State`:
 
 ```rust
 // lib.rs
 
-mod hdr; // NEW!
+mod hdr; // NUEVO!
 
 // ...
 
 pub struct State {
     // ...
-    // NEW!
+    // NUEVO!
     hdr: hdr::HdrPipeline,
 }
 
 impl State {
     pub fn new(window: Window) -> anyhow::Result<Self> {
         // ...
-        // NEW!
+        // NUEVO!
         let hdr = hdr::HdrPipeline::new(&device, &config);
 
         // ...
 
         Self {
             // ...
-            hdr, // NEW!
+            hdr, // NUEVO!
         }
     }
 }
 ```
 
-Then, when we resize the window, we need to call `resize()` on our `HdrPipeline`:
+Luego, cuando cambiamos el tamaño de la ventana, necesitamos llamar a `resize()` en nuestro `HdrPipeline`:
 
 ```rust
 fn resize(&mut self, width: u32, height: u32) {
-    // UPDATED!
+    // ACTUALIZADO!
     if width > 0 && height > 0 {
         // ...
         self.hdr
@@ -320,14 +320,14 @@ fn resize(&mut self, width: u32, height: u32) {
 }
 ```
 
-Next, in `render()`, we need to switch the `RenderPass` to use our HDR texture instead of the surface texture:
+A continuación, en `render()`, necesitamos cambiar el `RenderPass` para usar nuestra textura HDR en lugar de la textura de superficie:
 
 ```rust
 // render()
 let mut render_pass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
     label: Some("Render Pass"),
     color_attachments: &[Some(wgpu::RenderPassColorAttachment {
-        view: self.hdr.view(), // UPDATED!
+        view: self.hdr.view(), // ACTUALIZADO!
         resolve_target: None,
         ops: wgpu::Operations {
             load: wgpu::LoadOp::Clear(wgpu::Color {
@@ -345,53 +345,53 @@ let mut render_pass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
 });
 ```
 
-Finally, after we draw all the objects in the frame, we can run our tonemapper with the surface texture as the output:
+Finalmente, después de dibujar todos los objetos en el fotograma, podemos ejecutar nuestro mapeador de tonos con la textura de superficie como salida:
 
 ```rust
-// NEW!
-// Apply tonemapping
+// NUEVO!
+// Aplicar mapeo de tonos
 self.hdr.process(&mut encoder, &view);
 ```
 
-It's a pretty easy switch. Here's the image before using HDR:
+Es un cambio bastante fácil. Aquí está la imagen antes de usar HDR:
 
 ![before hdr](./before-hdr.png)
 
-Here's what it looks like after implementing HDR:
+Así es como se ve después de implementar HDR:
 
 ![after hdr](./after-hdr.png)
 
-## Loading HDR textures
+## Cargando texturas HDR
 
-Now that we have an HDR render buffer, we can start leveraging HDR textures to their fullest. One of the primary uses for HDR textures is to store lighting information in the form of an environment map.
+Ahora que tenemos un búfer de renderizado HDR, podemos comenzar a aprovechar las texturas HDR al máximo. Uno de los usos principales de las texturas HDR es almacenar información de iluminación en forma de mapa de ambiente.
 
-This map can be used to light objects, display reflections and also to make a skybox. We're going to create a skybox using HDR texture, but first, we need to talk about how environment maps are stored.
+Este mapa se puede usar para iluminar objetos, mostrar reflejos y también para hacer un cielo. Vamos a crear un cielo usando textura HDR, pero primero, necesitamos hablar sobre cómo se almacenan los mapas de ambiente.
 
-## Equirectangular textures
+## Texturas Equirectangulares
 
-An equirectangular texture is a texture where a sphere is stretched across a rectangular surface using what's known as an equirectangular projection. This map of the Earth is an example of this projection.
+Una textura equirectangular es una textura donde una esfera se estira en una superficie rectangular usando lo que se conoce como proyección equirectangular. Este mapa de la Tierra es un ejemplo de esta proyección.
 
 ![map of the earth](https://upload.wikimedia.org/wikipedia/commons/thumb/8/83/Equirectangular_projection_SW.jpg/1024px-Equirectangular_projection_SW.jpg)
 
-This projection maps the longitude values of the sphere to the horizontal coordinates of the texture. The latitude values get mapped to the vertical coordinates. This means that the vertical middle of the texture is the equator (0° latitude) of the sphere, the horizontal middle is the prime meridian (0° longitude) of the sphere, the left and right edges of the texture are the anti-meridian (+180°/-180° longitude) the top and bottom edges of the texture are the north pole (90° latitude) and south pole (-90° latitude), respectively.
+Esta proyección asigna los valores de longitud de la esfera a las coordenadas horizontales de la textura. Los valores de latitud se asignan a las coordenadas verticales. Esto significa que el medio vertical de la textura es el ecuador (latitud 0°) de la esfera, el medio horizontal es el meridiano principal (longitud 0°) de la esfera, los bordes izquierdo y derecho de la textura son el antimeridiano (longitud +180°/-180°) y los bordes superior e inferior de la textura son el polo norte (latitud 90°) y el polo sur (latitud -90°), respectivamente.
 
 ![equirectangular diagram](./equirectangular.svg)
 
-This simple projection is easy to use, making it one of the most popular projections for storing spherical textures. You can see the particular environment map we are going to use below.
+Esta proyección simple es fácil de usar, lo que la hace una de las proyecciones más populares para almacenar texturas esféricas. Puedes ver el mapa de ambiente particular que vamos a usar a continuación.
 
 ![equirectangular skybox](./kloofendal_43d_clear_puresky.jpg)
 
-## Cube Maps
+## Mapas de Cubo
 
-While we can technically use an equirectangular map directly, as long as we do some math to figure out the correct coordinates, it is a lot more convenient to convert our environment map into a cube map.
+Si bien técnicamente podemos usar un mapa equirectangular directamente, siempre que hagamos las matemáticas para determinar las coordenadas correctas, es mucho más conveniente convertir nuestro mapa de ambiente en un mapa de cubo.
 
 <div class="info">
 
-A cube map is a special kind of texture that has six layers. Each layer corresponds to a different face of an imaginary cube that is aligned to the X, Y and Z axes. The layers are stored in the following order: +X, -X, +Y, -Y, +Z, -Z. 
+Un mapa de cubo es un tipo especial de textura que tiene seis capas. Cada capa corresponde a una cara diferente de un cubo imaginario alineado con los ejes X, Y y Z. Las capas se almacenan en el siguiente orden: +X, -X, +Y, -Y, +Z, -Z.
 
 </div>
 
-To prepare to store the cube texture, we are going to create a new struct called `CubeTexture` in `texture.rs`.
+Para prepararnos para almacenar la textura del cubo, vamos a crear una nueva estructura llamada `CubeTexture` en `texture.rs`.
 
 ```rust
 pub struct CubeTexture {
@@ -461,13 +461,13 @@ impl CubeTexture {
 }
 ```
 
-With this, we can now write the code to load the HDR into a cube texture.
+Con esto, ahora podemos escribir el código para cargar el HDR en una textura de cubo.
 
-## Compute shaders
+## Shaders de Computación
 
-Up to this point, we've been exclusively using render pipelines, but I felt this was a good time to introduce the compute pipelines and, by extension, compute shaders. Compute pipelines are a lot easier to set up. All you need is to tell the pipeline what resources you want to use, what code you want to run, and how many threads you'd like the GPU to use when running your code. We're going to use a compute shader to give each pixel in our cube texture a color from the HDR image.
+Hasta este punto, hemos estado usando exclusivamente tuberías de renderizado, pero sentí que era un buen momento para introducir las tuberías de computación y, por extensión, los shaders de computación. Las tuberías de computación son mucho más fáciles de configurar. Todo lo que necesitas es decirle a la tubería qué recursos deseas usar, qué código deseas ejecutar y cuántos hilos te gustaría que la GPU use al ejecutar tu código. Vamos a usar un shader de computación para dar a cada píxel en nuestra textura de cubo un color de la imagen HDR.
 
-Before we can use compute shaders, we need to enable them in wgpu. We can do that by changing the line where we specify what features we want to use. In `lib.rs`, change the code where we request a device:
+Antes de que podamos usar shaders de computación, necesitamos habilitarlos en wgpu. Podemos hacerlo cambiando la línea donde especificamos qué características queremos usar. En `lib.rs`, cambia el código donde solicitamos un dispositivo:
 
 ```rust
 let (device, queue) = adapter
@@ -487,9 +487,9 @@ let (device, queue) = adapter
 
 <div class="warn">
 
-You may have noted that we have switched from `downlevel_webgl2_defaults()` to `downlevel_defaults()`. This means that we are dropping support for WebGL2. The reason for this is that WebGL2 doesn't support the compute shaders. WebGPU was built with compute shaders in mind. As of writing, the only browser that supports WebGPU is Chrome and some experimental browsers such as Firefox Nightly.
+Quizás hayas notado que hemos cambiado de `downlevel_webgl2_defaults()` a `downlevel_defaults()`. Esto significa que estamos eliminando el soporte para WebGL2. La razón es que WebGL2 no admite shaders de computación. WebGPU fue construido teniendo en cuenta los shaders de computación. En el momento de escribir esto, el único navegador que soporta WebGPU es Chrome y algunos navegadores experimentales como Firefox Nightly.
 
-Consequently, we are going to remove the WebGL feature from `Cargo.toml`. This line in particular:
+Por consiguiente, vamos a eliminar la característica de WebGL de `Cargo.toml`. Esta línea en particular:
 
 ```toml
 wgpu = { version = "27.0.0", features = ["webgl"]}
@@ -497,7 +497,7 @@ wgpu = { version = "27.0.0", features = ["webgl"]}
 
 </div>
 
-Now that we've told wgpu that we want to use the compute shaders, let's create a struct in `resource.rs` that we'll use to load the HDR image into our cube map.
+Ahora que le hemos dicho a wgpu que queremos usar shaders de computación, vamos a crear una estructura en `resource.rs` que usaremos para cargar la imagen HDR en nuestro mapa de cubo.
 
 ```rust
 pub struct HdrLoader {
@@ -674,13 +674,13 @@ impl HdrLoader {
 }
 ```
 
-The `dispatch_workgroups` call tells the GPU to run our code in batches called workgroups. Each workgroup has a number of worker threads called invocations that run the code in parallel. Workgroups are organized as a 3d grid with the dimensions we pass to `dispatch_workgroups`.
+La llamada `dispatch_workgroups` le dice a la GPU que ejecute nuestro código en lotes llamados grupos de trabajo. Cada grupo de trabajo tiene un número de hilos de trabajo llamados invocaciones que ejecutan el código en paralelo. Los grupos de trabajo se organizan como una cuadrícula 3D con las dimensiones que pasamos a `dispatch_workgroups`.
 
-In this example, we have a workgroup grid divided into 16x16 chunks and storing the layer in the z dimension.
+En este ejemplo, tenemos una cuadrícula de grupos de trabajo dividida en fragmentos de 16x16 y almacenando la capa en la dimensión z.
 
-## The compute shader
+## El shader de computación
 
-Now, let's write a compute shader that will convert our equirectangular texture to a cube texture. Create a file called `equirectangular.wgsl`. We're going to break it down chunk by chunk.
+Ahora, escribamos un shader de computación que convertirá nuestra textura equirectangular a una textura de cubo. Crea un archivo llamado `equirectangular.wgsl`. Vamos a desglosarlo fragmento por fragmento.
 
 ```wgsl
 const PI: f32 = 3.1415926535897932384626433832795;
@@ -692,10 +692,10 @@ struct Face {
 }
 ```
 
-Two things here:
+Dos cosas aquí:
 
-1. WGSL doesn't have a built-in for PI, so we need to specify it ourselves.
-2. each face of the cube map has an orientation to it, so we need to store that.
+1. WGSL no tiene una función integrada para PI, así que necesitamos especificarlo nosotros mismos.
+2. Cada cara del mapa de cubo tiene una orientación, así que necesitamos almacenarla.
 
 ```wgsl
 @group(0)
@@ -707,11 +707,11 @@ var src: texture_2d<f32>;
 var dst: texture_storage_2d_array<rgba32float, write>;
 ```
 
-Here, we have the only two bindings we need. The equirectangular `src` texture and our `dst` cube texture. Some things to note about `dst`:
+Aquí, tenemos los únicos dos enlaces que necesitamos. La textura equirectangular `src` y nuestra textura de cubo `dst`. Algunas cosas a tener en cuenta sobre `dst`:
 
-1. While `dst` is a cube texture, it's stored as an array of 2d textures.
-2. The type of binding we're using here is a storage texture. An array storage texture, to be precise. This is a unique binding only available to compute shaders. It allows us to write directly to the texture.
-3. When using a storage texture binding, we need to specify the format of the texture. If you try to bind a texture with a different format, wgpu will panic.
+1. Aunque `dst` es una textura de cubo, se almacena como una matriz de texturas 2D.
+2. El tipo de enlace que estamos usando aquí es una textura de almacenamiento. Una textura de almacenamiento de matriz, para ser precisos. Este es un enlace único solo disponible para shaders de computación. Nos permite escribir directamente en la textura.
+3. Cuando usamos un enlace de textura de almacenamiento, necesitamos especificar el formato de la textura. Si intentas vincular una textura con un formato diferente, wgpu entrará en pánico.
 
 ```wgsl
 @compute
@@ -786,17 +786,17 @@ fn compute_equirect_to_cubemap(
 }
 ```
 
-While I commented in the previous code, there are some things I want to go over that wouldn't fit well in a comment.
+Aunque comenté el código anterior, hay algunas cosas que quiero repasar que no se ajustarían bien en un comentario.
 
-The `workgroup_size` decorator tells the dimensions of the workgroup's local grid of invocations. Because we are dispatching one workgroup for every pixel in the texture, we have each workgroup be a 16x16x1 grid. This means that each workgroup can have 256 threads to work with.
+El decorador `workgroup_size` indica las dimensiones de la cuadrícula local de invocaciones del grupo de trabajo. Debido a que estamos enviando un grupo de trabajo para cada píxel en la textura, hacemos que cada grupo de trabajo sea una cuadrícula de 16x16x1. Esto significa que cada grupo de trabajo puede tener 256 hilos con los que trabajar.
 
 <div class="warn">
 
-For WebGPU, each workgroup can only have a max of 256 threads (also called invocations).
+Para WebGPU, cada grupo de trabajo puede tener un máximo de 256 hilos (también llamados invocaciones).
 
 </div>
 
-With this, we can load the environment map in the `new()` function:
+Con esto, podemos cargar el mapa de ambiente en la función `new()`:
 
 ```rust
 let hdr_loader = resources::HdrLoader::new(&device);
@@ -810,11 +810,11 @@ let sky_texture = hdr_loader.from_equirectangular_bytes(
 )?;
 ```
 
-## Skybox
+## Cielo (Skybox)
 
-Now that we have an environment map to render let's use it to make our skybox. There are different ways to render a skybox. A standard way is to render a cube and map the environment map on it. While that method works, it can have some artifacts in the corners and edges where the cube's faces meet.
+Ahora que tenemos un mapa de ambiente para renderizar, usémoslo para hacer nuestro cielo. Hay diferentes formas de renderizar un cielo. Una forma estándar es renderizar un cubo y mapear el mapa de ambiente en él. Si bien ese método funciona, puede tener algunos artefactos en las esquinas y bordes donde se encuentran las caras del cubo.
 
-Instead, we are going to render to the entire screen, compute the view direction from each pixel and use that to sample the texture. First, we need to create a bindgroup for the environment map so that we can use it for rendering. Add the following to `new()`:
+En cambio, vamos a renderizar en toda la pantalla, calcular la dirección de vista de cada píxel y usarla para muestrear la textura. Primero, necesitamos crear un grupo de enlace para el mapa de ambiente para que podamos usarlo para renderizar. Agrega lo siguiente a `new()`:
 
 ```rust
 let environment_layout =
@@ -856,10 +856,10 @@ let environment_bind_group = device.create_bind_group(&wgpu::BindGroupDescriptor
 });
 ```
 
-Now that we have the bindgroup, we need a render pipeline to render the skybox.
+Ahora que tenemos el grupo de enlace, necesitamos una tubería de renderizado para renderizar el cielo.
 
 ```rust
-// NEW!
+// NUEVO!
 let sky_pipeline = {
     let layout = device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
         label: Some("Sky Pipeline Layout"),
@@ -879,7 +879,7 @@ let sky_pipeline = {
 };
 ```
 
-One thing to note here. We added the primitive format to `create_render_pipeline()`. Also, we changed the depth compare function to `CompareFunction::LessEqual` (we'll discuss why when we go over the sky shader). Here are the changes to that:
+Una cosa a tener en cuenta aquí. Agregamos el formato primitivo a `create_render_pipeline()`. Además, cambiamos la función de comparación de profundidad a `CompareFunction::LessEqual` (discutiremos por qué cuando repasemos el shader del cielo). Aquí están los cambios en eso:
 
 ```rust
 fn create_render_pipeline(
@@ -911,12 +911,12 @@ fn create_render_pipeline(
 }
 ```
 
-Don't forget to add the new bindgroup and pipeline to the to `State`.
+No olvides agregar el nuevo grupo de enlace y tubería a `State`.
 
 ```rust
 pub struct State {
     // ...
-    // NEW!
+    // NUEVO!
     hdr: hdr::HdrPipeline,
     environment_bind_group: wgpu::BindGroup,
     sky_pipeline: wgpu::RenderPipeline,
@@ -928,7 +928,7 @@ impl State {
         // ...
         Ok(Self {
             // ...
-            // NEW!
+            // NUEVO!
             hdr,
             environment_bind_group,
             sky_pipeline,
@@ -938,7 +938,7 @@ impl State {
 }
 ```
 
-Now let's cover `sky.wgsl`.
+Ahora cubramos `sky.wgsl`.
 
 ```wgsl
 struct Camera {
@@ -989,15 +989,15 @@ fn fs_main(in: VertexOutput) -> @location(0) vec4<f32> {
 }
 ```
 
-Let's break this down:
+Desglosemos esto:
 
-1. We create a triangle twice the size of the screen.
-2. In the fragment shader, we get the view direction from the clip position. We use the inverse projection matrix to convert the clip coordinates to view direction. Then, we use the inverse view matrix to get the direction into world space, as that's what we need to sample the sky box correctly.
-3. We then sample the sky texture with the view direction.
+1. Creamos un triángulo del doble del tamaño de la pantalla.
+2. En el shader de fragmento, obtenemos la dirección de vista de la posición de clip. Usamos la matriz de proyección inversa para convertir las coordenadas de clip a dirección de vista. Luego, usamos la matriz de vista inversa para obtener la dirección en el espacio mundial, ya que eso es lo que necesitamos para muestrear el cielo correctamente.
+3. Luego muestreamos la textura del cielo con la dirección de vista.
 
 <!-- ![debugging skybox](./debugging-skybox.png) -->
 
-For this to work, we need to change our camera uniforms a bit. We need to add the inverse view matrix and inverse projection matrix to `CameraUniform` struct.
+Para que esto funcione, necesitamos cambiar un poco nuestros uniformes de cámara. Necesitamos agregar la matriz de vista inversa y la matriz de proyección inversa a la estructura `CameraUniform`.
 
 ```rust
 #[repr(C)]
@@ -1035,7 +1035,7 @@ impl CameraUniform {
 }
 ```
 
-Make sure to change the `Camera` definition in `shader.wgsl`, and `light.wgsl`. Just as a reminder, it looks like this:
+Asegúrate de cambiar la definición de `Camera` en `shader.wgsl` y `light.wgsl`. Como recordatorio, se ve así:
 
 ```wgsl
 struct Camera {
@@ -1050,19 +1050,19 @@ var<uniform> camera: Camera;
 
 <div class="info">
 
-You may have noticed that we removed the `OPENGL_TO_WGPU_MATRIX`. The reason for this is that it was messing with the projection of the skybox.
+Quizás hayas notado que quitamos la `OPENGL_TO_WGPU_MATRIX`. La razón es que estaba interfiriendo con la proyección del cielo.
 
 ![projection error](./project-error.png)
 
-Technically, it wasn't needed, so I felt fine removing it.
+Técnicamente, no era necesaria, así que me pareció bien eliminarla.
 
 </div>
 
-## Reflections
+## Reflejos
 
-Now that we have a sky, we can mess around with using it for lighting. This won't be physically accurate (we'll look into that later). That being said, we have the environment map, so we might as well use it.
+Ahora que tenemos un cielo, podemos experimentar usándolo para iluminación. Esto no será físicamente preciso (lo veremos más adelante). Dicho esto, tenemos el mapa de ambiente, así que también podemos usarlo.
 
-In order to do that though, we need to change our shader to do lighting in world space instead of tangent space because our environment map is in world space. Because there are a lot of changes I'll post the whole shader here:
+Para hacer eso, sin embargo, necesitamos cambiar nuestro shader para hacer iluminación en el espacio mundial en lugar de espacio tangente porque nuestro mapa de ambiente está en el espacio mundial. Debido a que hay muchos cambios, publicaré el shader completo aquí:
 
 ```wgsl
 // Vertex shader
@@ -1206,21 +1206,22 @@ fn fs_main(in: VertexOutput) -> @location(0) vec4<f32> {
 }
 ```
 
-A little note on the reflection math. The `view_dir` gives us the direction to the camera from the surface. The reflection math needs the direction from the camera to the surface, so we negate `view_dir`. We then use `wgsl`'s built-in `reflect` function to reflect the inverted `view_dir` about the `world_normal`. This gives us a direction that we can use to sample the environment map and get the color of the sky in that direction. Just looking at the reflection component gives us the following:
+Una pequeña nota sobre la matemática de la reflexión. El `view_dir` nos da la dirección hacia la cámara desde la superficie. La matemática de reflexión necesita la dirección desde la cámara hacia la superficie, así que negamos `view_dir`. Luego usamos la función integrada `reflect` de `wgsl` para reflejar el `view_dir` invertido sobre `world_normal`. Esto nos da una dirección que podemos usar para muestrear el mapa de ambiente y obtener el color del cielo en esa dirección. Solo mirando el componente de reflexión nos da lo siguiente:
 
 ![just-reflections](./just-reflections.png)
 
-Here's the finished scene:
+Aquí está la escena terminada:
 
 ![with-reflections](./with-reflections.png)
 
-## Output too dark on WebGPU?
+## ¿La salida demasiado oscura en WebGPU?
 
-WebGPU doesn't support using sRGB texture formats as the
-output for a surface. We can get around this by making the
-texture view used to render use the sRGB version of the
-format. To do this we need to change the surface config
-we use to allow view formats with sRGB.
+WebGPU no admite el uso de formatos de textura sRGB como
+la salida de una superficie. Podemos contornear esto haciendo
+que la vista de textura utilizada para renderizar use la versión
+sRGB del formato. Para hacer esto, necesitamos cambiar la
+configuración de superficie que usamos para permitir formatos
+de vista con sRGB.
 
 ```rust
 let config = wgpu::SurfaceConfiguration {
@@ -1230,13 +1231,13 @@ let config = wgpu::SurfaceConfiguration {
     height: size.height,
     present_mode: surface_caps.present_modes[0],
     alpha_mode: surface_caps.alpha_modes[0],
-    // NEW!
+    // NUEVO!
     view_formats: vec![surface_format.add_srgb_suffix()],
     desired_maximum_frame_latency: 2,
 };
 ```
 
-Then we need to create a view with sRGB enabled in
+Luego, necesitamos crear una vista con sRGB habilitado en
 `State::render()`.
 
 ```rust
@@ -1248,19 +1249,19 @@ let view = output
     });
 ```
 
-You may have noticed as well that in `HdrPipeline::new()`
-we use `config.format.add_srgb_suffix()` when creating
-the render pipeline. This is required as if we don't
-the sRGB enabled `TextureView` won't work with the
-render pipeline.
+Quizás también hayas notado que en `HdrPipeline::new()`
+usamos `config.format.add_srgb_suffix()` cuando creamos
+la tubería de renderizado. Esto es obligatorio porque si no lo
+hacemos, la `TextureView` habilitada para sRGB no funcionará
+con la tubería de renderizado.
 
-With that you should get the sRGB output as expected.
+Con eso deberías obtener la salida sRGB como se esperaba.
 
 ## Demo
 
 <div class="warn">
 
-If your browser doesn't support WebGPU, this example won't work for you.
+Si tu navegador no soporta WebGPU, este ejemplo no funcionará para ti.
 
 </div>
 

@@ -1,12 +1,12 @@
-# Dependencies and the window
+# Dependencias y la ventana
 
-## Boring, I know
+## Aburrido, lo sé
 
-Some of you reading this are very experienced with opening up windows in Rust and probably have your favorite windowing library, but this guide is designed for everybody, so it's something that we need to cover. Luckily, you don't need to read this if you know what you're doing. One thing that you do need to know is that whatever windowing solution you use needs to support the [raw-window-handle](https://github.com/rust-windowing/raw-window-handle) crate.
+Algunos de ustedes que leen esto tienen mucha experiencia abriendo ventanas en Rust y probablemente tengan su biblioteca de ventanas favorita, pero esta guía está diseñada para todos, así que es algo que necesitamos cubrir. Afortunadamente, no necesitas leer esto si sabes lo que estás haciendo. Una cosa que sí necesitas saber es que cualquier solución de ventanas que uses debe soportar el crate [raw-window-handle](https://github.com/rust-windowing/raw-window-handle).
 
-## What crates are we using?
+## ¿Qué crates estamos usando?
 
-For the beginner stuff, we're going to keep things very simple. We'll add things as we go, but I've listed the relevant `Cargo.toml` bits below.
+Para las cosas de principiantes, vamos a mantener las cosas muy simples. Agregaremos cosas sobre la marcha, pero he listado las partes relevantes de `Cargo.toml` a continuación.
 
 ```toml
 [dependencies]
@@ -18,25 +18,25 @@ wgpu = "27.0.0"
 pollster = "0.3"
 ```
 
-## Using Rust's new resolver
+## Usando el nuevo resolver de Rust
 
-As of version 0.10, wgpu requires Cargo's [newest feature resolver](https://doc.rust-lang.org/cargo/reference/resolver.html#feature-resolver-version-2), which is the default in the 2021 edition (any new project started with Rust version 1.56.0 or newer). However, if you are still using the 2018 edition, you must include `resolver = "2"` in either the `[package]` section of `Cargo.toml` if you are working on a single crate or the `[workspace]` section of the root `Cargo.toml` in a workspace.
+A partir de la versión 0.10, wgpu requiere el [resolver de características más nuevo](https://doc.rust-lang.org/cargo/reference/resolver.html#feature-resolver-version-2) de Cargo, que es el predeterminado en la edición 2021 (cualquier proyecto nuevo iniciado con Rust versión 1.56.0 o posterior). Sin embargo, si todavía estás usando la edición 2018, debes incluir `resolver = "2"` en la sección `[package]` de `Cargo.toml` si estás trabajando en un solo crate o en la sección `[workspace]` del `Cargo.toml` raíz en un espacio de trabajo.
 
 ## env_logger
 
-It is very important to enable logging via `env_logger::init();`.
-When wgpu hits any error, it panics with a generic message, while logging the real error via the log crate.
-This means if you don't include `env_logger::init()`, wgpu will fail silently, leaving you very confused!  
-(This has been done in the code below)
+Es muy importante habilitar el logging mediante `env_logger::init();`.
+Cuando wgpu encuentra cualquier error, entra en pánico con un mensaje genérico, mientras registra el error real a través del crate log.
+Esto significa que si no incluyes `env_logger::init()`, wgpu fallará silenciosamente, ¡dejándote muy confundido!
+(Esto ya se ha hecho en el código a continuación)
 
-## Create a new project
+## Crear un nuevo proyecto
 
-run ```cargo new project_name``` where project_name is the name of the project.  
-(In the example below, I have used 'tutorial1_window')
+ejecuta ```cargo new nombre_proyecto``` donde nombre_proyecto es el nombre del proyecto.
+(En el ejemplo a continuación, he usado 'tutorial1_window')
 
-## The code
+## El código
 
-We are going to want somewhere to put all of our state so let's create a `State` struct.
+Vamos a querer un lugar donde poner todo nuestro estado, así que creemos una estructura `State`.
 
 ```rust
 use std::sync::Arc;
@@ -48,14 +48,14 @@ use winit::{
 #[cfg(target_arch = "wasm32")]
 use wasm_bindgen::prelude::*;
 
-// This will store the state of our game
+// Esto almacenará el estado de nuestro juego
 pub struct State {
     window: Arc<Window>,
 }
 
 impl State {
-    // We don't need this to be async right now,
-    // but we will in the next tutorial
+    // No necesitamos que esto sea async ahora mismo,
+    // pero lo necesitaremos en el próximo tutorial
     pub async fn new(window: Arc<Window>) -> anyhow::Result<Self> {
         Ok(Self {
             window,
@@ -63,22 +63,22 @@ impl State {
     }
 
     pub fn resize(&mut self, _width: u32, _height: u32) {
-        // We'll do stuff here in the next tutorial
+        // Haremos cosas aquí en el próximo tutorial
     }
-    
+
     pub fn render(&mut self) {
         self.window.request_redraw();
 
-        // We'll do more stuff here in the next tutorial
+        // Haremos más cosas aquí en el próximo tutorial
     }
 }
 
 // ...
 ```
 
-There's not much going on here, but once we start using WGPU will start filling this up pretty quick. Most of the methods on this struct are place holders, though in `render()` we ask the window to draw another frame as soon as possible as winit only draws one frame unless the window is resized or we request it to draw another one.
+No hay mucho sucediendo aquí, pero una vez que comencemos a usar WGPU, comenzaremos a llenarlo bastante rápido. La mayoría de los métodos en esta estructura son marcadores de posición, aunque en `render()` le pedimos a la ventana que dibuje otro fotograma lo antes posible, ya que winit solo dibuja un fotograma a menos que la ventana se redimensione o solicitemos que dibuje otro.
 
-Now that we have our `State` struct, we need to tell winit how to use it. We'll create an `App` struct for this.
+Ahora que tenemos nuestra estructura `State`, necesitamos decirle a winit cómo usarla. Crearemos una estructura `App` para esto.
 
 ```rust
 pub struct App {
@@ -100,13 +100,13 @@ impl App {
 }
 ```
 
-So the `App` struct has two fields: `state` and `proxy`.
+Entonces, la estructura `App` tiene dos campos: `state` y `proxy`.
 
-The `state` variable stores our `State` struct as an option.The reason we need an option is that `State::new()` needs a window and we can't create a window until the application gets to the `Resumed` state. We'll get more into that in a bit.
+La variable `state` almacena nuestra estructura `State` como una opción. La razón por la que necesitamos una opción es que `State::new()` necesita una ventana y no podemos crear una ventana hasta que la aplicación llegue al estado `Resumed`. Entraremos en más detalles sobre eso en un momento.
 
-The `proxy` variable is only needed on the web. The reason for this is that creating WGPU resources is an async process. Again we'll get into that in a bit.
+La variable `proxy` solo se necesita en la web. La razón de esto es que crear recursos WGPU es un proceso asíncrono. De nuevo, entraremos en eso en un momento.
 
-Now that we have an `App` struct we need to implement the `ApplicationHandler` trait. This will give us a variety of different functions that we can use to get application events such as key press, mouse movements and various lifecycle events. We'll start by covering the `resumed` and `user_event` methods first.
+Ahora que tenemos una estructura `App`, necesitamos implementar el trait `ApplicationHandler`. Esto nos dará una variedad de funciones diferentes que podemos usar para obtener eventos de la aplicación, como pulsaciones de teclas, movimientos del mouse y varios eventos del ciclo de vida. Comenzaremos cubriendo primero los métodos `resumed` y `user_event`.
 
 ```rust
 impl ApplicationHandler<State> for App {
@@ -118,7 +118,7 @@ impl ApplicationHandler<State> for App {
         {
             use wasm_bindgen::JsCast;
             use winit::platform::web::WindowAttributesExtWebSys;
-            
+
             const CANVAS_ID: &str = "canvas";
 
             let window = wgpu::web_sys::window().unwrap_throw();
@@ -132,15 +132,15 @@ impl ApplicationHandler<State> for App {
 
         #[cfg(not(target_arch = "wasm32"))]
         {
-            // If we are not on web we can use pollster to
-            // await the 
+            // Si no estamos en web, podemos usar pollster para
+            // esperar el futuro
             self.state = Some(pollster::block_on(State::new(window)).unwrap());
         }
 
         #[cfg(target_arch = "wasm32")]
         {
-            // Run the future asynchronously and use the
-            // proxy to send the results to the event loop
+            // Ejecutar el futuro de forma asíncrona y usar el
+            // proxy para enviar los resultados al event loop
             if let Some(proxy) = self.proxy.take() {
                 wasm_bindgen_futures::spawn_local(async move {
                     assert!(proxy
@@ -157,7 +157,7 @@ impl ApplicationHandler<State> for App {
 
     #[allow(unused_mut)]
     fn user_event(&mut self, _event_loop: &ActiveEventLoop, mut event: State) {
-        // This is where proxy.send_event() ends up
+        // Aquí es donde termina proxy.send_event()
         #[cfg(target_arch = "wasm32")]
         {
             event.window.request_redraw();
@@ -173,17 +173,17 @@ impl ApplicationHandler<State> for App {
 }
 ```
 
-The `resumed` method seems like it does a lot, but it only does a few things:
+El método `resumed` parece que hace mucho, pero solo hace algunas cosas:
 
-- It defines attributes about the window including some web specific stuff.
-- We use those attributes to create the window.
-- We create a future that creates our `State` struct
-- On native we use pollster to get await the future
-- On web we run the future asynchronously which sends the results to the `user_event` function
+- Define atributos sobre la ventana, incluyendo algunas cosas específicas de la web.
+- Usamos esos atributos para crear la ventana.
+- Creamos un futuro que crea nuestra estructura `State`
+- En nativo usamos pollster para esperar el futuro
+- En web ejecutamos el futuro de forma asíncrona, que envía los resultados a la función `user_event`
 
-The `user_event` function just serves as a landing point for our `State` future. `resumed` isn't async so we need to offload the future and send the results somewhere.
+La función `user_event` solo sirve como un punto de llegada para nuestro futuro `State`. `resumed` no es async, así que necesitamos descargar el futuro y enviar los resultados a algún lugar.
 
-Next we'll talk about `window_event`.
+A continuación, hablaremos sobre `window_event`.
 
 ```rust
 impl ApplicationHandler<State> for App {
@@ -225,9 +225,9 @@ impl ApplicationHandler<State> for App {
 }
 ```
 
-This is where we can process events such as keyboard inputs, and mouse movements, as well as other window events such as when the window wants to draw or is resized. We can call the methods we defined on `State` here.
+Aquí es donde podemos procesar eventos como entradas de teclado y movimientos del mouse, así como otros eventos de ventana, como cuando la ventana quiere dibujar o se redimensiona. Podemos llamar a los métodos que definimos en `State` aquí.
 
-Next we need to actually run our code. We'll create a `run()` function to do that.
+A continuación, necesitamos ejecutar nuestro código. Crearemos una función `run()` para hacer eso.
 
 ```rust
 pub fn run() -> anyhow::Result<()> {
@@ -251,36 +251,36 @@ pub fn run() -> anyhow::Result<()> {
 }
 ```
 
-This function sets up the logger as well as creates the `event_loop` and our `app` and then runs our `app` to completion.
+Esta función configura el logger, así como crea el `event_loop` y nuestra `app` y luego ejecuta nuestra `app` hasta su finalización.
 
-## Added support for the web
+## Soporte agregado para la web
 
-In order to get our app to run on the web we need to make some changes to our `Cargo.toml`:
+Para que nuestra aplicación se ejecute en la web, necesitamos hacer algunos cambios en nuestro `Cargo.toml`:
 
 ```toml
 [lib]
 crate-type = ["cdylib", "rlib"]
 ```
 
-These lines tell Cargo that we want to allow our crate to build a native Rust static library (rlib) and a C/C++ compatible library (cdylib). We need rlib if we want to run wgpu in a desktop environment. We need cdylib to create the Web Assembly that the browser will run.
+Estas líneas le dicen a Cargo que queremos permitir que nuestro crate construya una biblioteca estática nativa de Rust (rlib) y una biblioteca compatible con C/C++ (cdylib). Necesitamos rlib si queremos ejecutar wgpu en un entorno de escritorio. Necesitamos cdylib para crear el Web Assembly que ejecutará el navegador.
 
 <div class="note">
 
 ## Web Assembly
 
-Web Assembly, i.e. WASM, is a binary format supported by most modern browsers that allows lower-level languages such as Rust to run on a web page. This allows us to write the bulk of our application in Rust and use a few lines of Javascript to get it running in a web browser.
+Web Assembly, es decir, WASM, es un formato binario compatible con la mayoría de los navegadores modernos que permite que lenguajes de bajo nivel como Rust se ejecuten en una página web. Esto nos permite escribir la mayor parte de nuestra aplicación en Rust y usar algunas líneas de Javascript para ejecutarla en un navegador web.
 
 </div>
 
-Now, all we need are some more dependencies that are specific to running in WASM:
+Ahora, todo lo que necesitamos son algunas dependencias más que son específicas para ejecutarse en WASM:
 
 ```toml
-# This should go in the Cargo.toml in the root directory
+# Esto debería ir en el Cargo.toml en el directorio raíz
 [profile.release]
 strip = true
 
 [dependencies]
-# the other regular dependencies...
+# las otras dependencias regulares...
 
 [target.'cfg(target_arch = "wasm32")'.dependencies]
 console_error_panic_hook = "0.1.6"
@@ -295,20 +295,20 @@ web-sys = { version = "0.3", features = [
 ]}
 ```
 
-The `[target.'cfg(target_arch = "wasm32")'.dependencies]` line tells Cargo to only include these dependencies if we are targeting the `wasm32` architecture. The next few dependencies just make interfacing with JavaScript a lot easier.
+La línea `[target.'cfg(target_arch = "wasm32")'.dependencies]` le dice a Cargo que solo incluya estas dependencias si estamos apuntando a la arquitectura `wasm32`. Las siguientes dependencias simplemente hacen que la interfaz con JavaScript sea mucho más fácil.
 
-- [console_error_panic_hook](https://docs.rs/console_error_panic_hook) configures the `panic!` macro to send errors to the javascript console. Without this, when you encounter panics, you'll be left in the dark about what caused them.
-- [console_log](https://docs.rs/console_log) implements the [log](https://docs.rs/log) API. It sends all logs to the javascript console. It can be configured to only send logs of a particular log level. This is also great for debugging.
-- We need to enable the WebGL feature on wgpu if we want to run on most current browsers. Support is in the works for using the WebGPU api directly, but that is only possible on experimental versions of browsers such as Firefox Nightly and Chrome Canary.<br>
-  You're welcome to test this code on these browsers (and the wgpu devs would appreciate it as well), but for the sake of simplicity, I'm going to stick to using the WebGL feature until the WebGPU api gets to a more stable state.<br>
-  If you want more details, check out the guide for compiling for the web on [wgpu's repo](https://github.com/gfx-rs/wgpu/wiki/Running-on-the-Web-with-WebGPU-and-WebGL)
-- [wasm-bindgen](https://docs.rs/wasm-bindgen) is the most important dependency in this list. It's responsible for generating the boilerplate code that will tell the browser how to use our crate. It also allows us to expose methods in Rust that can be used in JavaScript and vice-versa.<br>
-  I won't get into the specifics of wasm-bindgen, so if you need a primer (or just a refresher), check out [this](https://wasm-bindgen.github.io/wasm-bindgen/)
-- [web-sys](https://docs.rs/web-sys) is a crate with many methods and structures available in a normal javascript application: `get_element_by_id`, `append_child`. The features listed are only the bare minimum of what we need currently.
+- [console_error_panic_hook](https://docs.rs/console_error_panic_hook) configura la macro `panic!` para enviar errores a la consola de javascript. Sin esto, cuando encuentres pánicos, te quedarás en la oscuridad sobre qué los causó.
+- [console_log](https://docs.rs/console_log) implementa la API [log](https://docs.rs/log). Envía todos los logs a la consola de javascript. Se puede configurar para enviar solo logs de un nivel de log particular. Esto también es genial para depuración.
+- Necesitamos habilitar la característica WebGL en wgpu si queremos ejecutar en la mayoría de los navegadores actuales. El soporte está en desarrollo para usar la API WebGPU directamente, pero eso solo es posible en versiones experimentales de navegadores como Firefox Nightly y Chrome Canary.<br>
+  Eres bienvenido a probar este código en estos navegadores (y los desarrolladores de wgpu también lo apreciarían), pero por simplicidad, voy a seguir usando la característica WebGL hasta que la API WebGPU llegue a un estado más estable.<br>
+  Si quieres más detalles, consulta la guía para compilar para la web en [el repositorio de wgpu](https://github.com/gfx-rs/wgpu/wiki/Running-on-the-Web-with-WebGPU-and-WebGL)
+- [wasm-bindgen](https://docs.rs/wasm-bindgen) es la dependencia más importante en esta lista. Es responsable de generar el código repetitivo que le dirá al navegador cómo usar nuestro crate. También nos permite exponer métodos en Rust que se pueden usar en JavaScript y viceversa.<br>
+  No entraré en los detalles específicos de wasm-bindgen, así que si necesitas una introducción (o simplemente un repaso), consulta [esto](https://wasm-bindgen.github.io/wasm-bindgen/)
+- [web-sys](https://docs.rs/web-sys) es un crate con muchos métodos y estructuras disponibles en una aplicación javascript normal: `get_element_by_id`, `append_child`. Las características listadas son solo el mínimo indispensable de lo que necesitamos actualmente.
 
-## More code
+## Más código
 
-Let's create a function to run our code on web.
+Creemos una función para ejecutar nuestro código en web.
 
 ```rust
 #[cfg(target_arch = "wasm32")]
@@ -321,40 +321,40 @@ pub fn run_web() -> Result<(), wasm_bindgen::JsValue> {
 }
 ```
 
-This will set up `console_error_panic_hook` so that when our code panics we'll see it in the browser console. It will also call the other `run()` function.
+Esto configurará `console_error_panic_hook` para que cuando nuestro código entre en pánico lo veamos en la consola del navegador. También llamará a la otra función `run()`.
 
 ## Wasm Pack
 
-Now you can build a wgpu application with just wasm-bindgen, but I ran into some issues doing that. For one, you need to install wasm-bindgen on your computer as well as include it as a dependency. The version you install as a dependency **needs** to exactly match the version you installed. Otherwise, your build will fail.
+Ahora puedes construir una aplicación wgpu con solo wasm-bindgen, pero me encontré con algunos problemas al hacer eso. Por un lado, necesitas instalar wasm-bindgen en tu computadora además de incluirlo como dependencia. La versión que instalas como dependencia **necesita** coincidir exactamente con la versión que instalaste. De lo contrario, tu compilación fallará.
 
-To get around this shortcoming and to make the lives of everyone reading this easier, I opted to add [wasm-pack](https://drager.github.io/wasm-pack/) to the mix. Wasm-pack handles installing the correct version of wasm-bindgen for you, and it supports building for different types of web targets as well: browser, NodeJS, and bundlers such as webpack.
+Para evitar esta limitación y hacer la vida de todos los que leen esto más fácil, opté por agregar [wasm-pack](https://drager.github.io/wasm-pack/) a la mezcla. Wasm-pack maneja la instalación de la versión correcta de wasm-bindgen por ti, y soporta la compilación para diferentes tipos de objetivos web: navegador, NodeJS y empaquetadores como webpack.
 
-To use wasm-pack, first, you need to [install it](https://drager.github.io/wasm-pack/).
+Para usar wasm-pack, primero, necesitas [instalarlo](https://drager.github.io/wasm-pack/).
 
-Once you've done that, we can use it to build our crate. If you only have one crate in your project, you can just use `wasm-pack build`. If you're using a workspace, you'll have to specify what crate you want to build. Imagine your crate is a directory called `game`. You would then use:
+Una vez que hayas hecho eso, podemos usarlo para construir nuestro crate. Si solo tienes un crate en tu proyecto, puedes usar simplemente `wasm-pack build`. Si estás usando un espacio de trabajo, tendrás que especificar qué crate quieres construir. Imagina que tu crate es un directorio llamado `game`. Entonces usarías:
 
 ```bash
 wasm-pack build game
 ```
 
-Once wasm-pack is done building, you'll have a `pkg` directory in the same directory as your crate. This has all the javascript code needed to run the WASM code. You'd then import the WASM module in javascript:
+Una vez que wasm-pack haya terminado de construir, tendrás un directorio `pkg` en el mismo directorio que tu crate. Esto tiene todo el código javascript necesario para ejecutar el código WASM. Luego importarías el módulo WASM en javascript:
 
 ```js
 const init = await import('./pkg/game.js');
 init().then(() => console.log("WASM Loaded"));
 ```
 
-This site uses [Vuepress](https://vuepress.vuejs.org/), so I load the WASM in a Vue component. How you handle your WASM will depend on what you want to do. If you want to check out how I'm doing things, take a look at [this](https://github.com/sotrh/learn-wgpu/blob/master/docs/.vuepress/components/WasmExample.vue).
+Este sitio usa [Vuepress](https://vuepress.vuejs.org/), así que cargo el WASM en un componente Vue. Cómo manejes tu WASM dependerá de lo que quieras hacer. Si quieres ver cómo estoy haciendo las cosas, echa un vistazo a [esto](https://github.com/sotrh/learn-wgpu/blob/master/docs/.vuepress/components/WasmExample.vue).
 
 <div class="note">
 
-If you intend to use your WASM module in a plain HTML website, you'll need to tell wasm-pack to target the web:
+Si tienes la intención de usar tu módulo WASM en un sitio web HTML simple, necesitarás decirle a wasm-pack que apunte a la web:
 
 ```bash
 wasm-pack build --target web
 ```
 
-You'll then need to run the WASM code in an ES6 Module:
+Luego necesitarás ejecutar el código WASM en un módulo ES6:
 
 ```html
 <!DOCTYPE html>
@@ -393,7 +393,7 @@ You'll then need to run the WASM code in an ES6 Module:
 
 ## Demo
 
-Press the button below, and you will see the code running!
+¡Presiona el botón a continuación y verás el código ejecutándose!
 
 <WasmExample example="tutorial1_window"></WasmExample>
 

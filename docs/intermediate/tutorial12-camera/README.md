@@ -1,8 +1,8 @@
-# A Better Camera
+# Una Cámara Mejor
 
-I've been putting this off for a while. Implementing a camera isn't specifically related to using WGPU properly, but it's been bugging me, so let's do it.
+He estado posponiendo esto por un tiempo. Implementar una cámara no está específicamente relacionado con usar WGPU correctamente, pero me ha estado molestando, así que hagámoslo.
 
-`lib.rs` is getting a little crowded, so let's create a `camera.rs` file to put our camera code. The first things we're going to put in it are some imports and our `OPENGL_TO_WGPU_MATRIX`.
+`lib.rs` se está volviendo un poco abarrotado, así que vamos a crear un archivo `camera.rs` para poner nuestro código de cámara. Las primeras cosas que vamos a poner en él son algunas importaciones y nuestro `OPENGL_TO_WGPU_MATRIX`.
 
 ```rust
 use cgmath::*;
@@ -24,7 +24,7 @@ const SAFE_FRAC_PI_2: f32 = FRAC_PI_2 - 0.0001;
 
 <div class="note">
 
-`std::time::Instant` panics on WASM, so we'll use the [instant crate](https://docs.rs/instant). You'll want to include it in your `Cargo.toml`:
+`std::time::Instant` entra en pánico en WASM, así que usaremos el [instant crate](https://docs.rs/instant). Querrás incluirlo en tu `Cargo.toml`:
 
 ```toml
 [dependencies]
@@ -37,9 +37,9 @@ instant = { version = "0.1", features = [ "wasm-bindgen" ] }
 
 </div>
 
-## The Camera
+## La Cámara
 
-Next, we need to create a new `Camera` struct. We're going to be using an FPS-style camera, so we'll store the position and the yaw (horizontal rotation), and pitch (vertical rotation). We'll have a `calc_matrix` method to create our view matrix.
+A continuación, necesitamos crear una nueva estructura `Camera`. Vamos a usar una cámara de estilo FPS, así que guardaremos la posición, el yaw (rotación horizontal) y el pitch (rotación vertical). Tendremos un método `calc_matrix` para crear nuestra matriz de vista.
 
 ```rust
 #[derive(Debug)]
@@ -83,9 +83,9 @@ impl Camera {
 }
 ```
 
-## The Projection
+## La Proyección
 
-I've decided to split the projection from the camera. The projection only needs to change if the window resizes, so let's create a `Projection` struct.
+He decidido separar la proyección de la cámara. La proyección solo necesita cambiar si la ventana se redimensiona, así que vamos a crear una estructura `Projection`.
 
 ```rust
 pub struct Projection {
@@ -121,15 +121,15 @@ impl Projection {
 }
 ```
 
-One thing to note: `cgmath` currently returns a right-handed projection matrix from the `perspective` function. This means that the z-axis points out of the screen. If you want the z-axis to be *into* the screen (aka. a left-handed projection matrix), you'll have to code your own.
+Una cosa a notar: `cgmath` actualmente devuelve una matriz de proyección diestra de la función `perspective`. Esto significa que el eje z apunta fuera de la pantalla. Si quieres que el eje z sea *hacia* la pantalla (es decir, una matriz de proyección zurda), tendrás que programar la tuya propia.
 
-You can tell the difference between a right-handed coordinate system and a left-handed one by using your hands. Point your thumb to the right. This is the x-axis. Point your pointer finger up. This is the y-axis. Extend your middle finger. This is the z-axis. On your right hand, your middle finger should be pointing towards you. On your left hand, it should be pointing away.
+Puedes notar la diferencia entre un sistema de coordenadas diestro y uno zurdo usando tus manos. Apunta tu pulgar hacia la derecha. Este es el eje x. Apunta tu dedo índice hacia arriba. Este es el eje y. Extiende tu dedo medio. Este es el eje z. En tu mano derecha, tu dedo medio debe estar apuntando hacia ti. En tu mano izquierda, debe estar apuntando hacia afuera.
 
 ![./left_right_hand.gif](./left_right_hand.gif)
 
-# The Camera Controller
+# El Controlador de Cámara
 
-Our camera is different, so we'll need a new camera controller. Add the following to `camera.rs`.
+Nuestra cámara es diferente, así que necesitaremos un nuevo controlador de cámara. Agrega lo siguiente a `camera.rs`.
 
 ```rust
 #[derive(Debug)]
@@ -254,9 +254,9 @@ impl CameraController {
 }
 ```
 
-## Cleaning up `lib.rs`
+## Limpiando `lib.rs`
 
-First things first, we need to delete `Camera` and `CameraController`, as well as the extra `OPENGL_TO_WGPU_MATRIX` from `lib.rs`. Once you've done that, import `camera.rs`.
+Lo primero es lo primero, necesitamos eliminar `Camera` y `CameraController`, así como el `OPENGL_TO_WGPU_MATRIX` adicional de `lib.rs`. Una vez que hayas hecho eso, importa `camera.rs`.
 
 ```rust
 mod model;
@@ -264,7 +264,7 @@ mod texture;
 mod camera; // NEW!
 ```
 
-We need to update `update_view_proj` to use our new `Camera` and `Projection`.
+Necesitamos actualizar `update_view_proj` para usar nuestra nueva `Camera` y `Projection`.
 
 ```rust
 
@@ -279,7 +279,7 @@ impl CameraUniform {
 }
 ```
 
-We need to change our `State` to use our `Camera`, `CameraProjection` and `Projection` as well. We'll also add a `mouse_pressed` field to store whether the mouse was pressed.
+Necesitamos cambiar nuestro `State` para usar nuestra `Camera`, `CameraProjection` y `Projection` también. También añadiremos un campo `mouse_pressed` para almacenar si el ratón fue presionado.
 
 ```rust
 pub struct State {
@@ -293,9 +293,9 @@ pub struct State {
 }
 ```
 
-You'll need to import `winit::dpi::PhysicalPosition` if you haven't already.
+Necesitarás importar `winit::dpi::PhysicalPosition` si aún no lo has hecho.
 
-We need to update `new()` as well.
+También necesitamos actualizar `new()`.
 
 ```rust
 impl State {
@@ -325,7 +325,7 @@ impl State {
 }
 ```
 
-We also need to change our `projection` in `resize`.
+También necesitamos cambiar nuestra `projection` en `resize`.
 
 ```rust
 fn resize(&mut self, width: u32, height: u32) {
@@ -335,9 +335,9 @@ fn resize(&mut self, width: u32, height: u32) {
 }
 ```
 
-`input()` will need to be updated as well. Up to this point, we have been using `WindowEvent`s for our camera controls. While this works, it's not the best solution. The [winit docs](https://docs.rs/winit/0.24.0/winit/event/enum.WindowEvent.html?search=#variant.CursorMoved) inform us that OS will often transform the data for the `CursorMoved` event to allow effects such as cursor acceleration.
+`input()` también necesitará ser actualizado. Hasta este punto, hemos estado usando `WindowEvent`s para nuestros controles de cámara. Aunque funciona, no es la mejor solución. La [documentación de winit](https://docs.rs/winit/0.24.0/winit/event/enum.WindowEvent.html?search=#variant.CursorMoved) nos informa que el SO a menudo transformará los datos del evento `CursorMoved` para permitir efectos como la aceleración del cursor.
 
-Now, to fix this, we could change the `input()` function to process `DeviceEvent` instead of `WindowEvent`, but keyboard and button presses don't get emitted as `DeviceEvent`s on MacOS and WASM. Instead, we'll just remove the `CursorMoved` check in `input()` and a manual call to `camera_controller.process_mouse()` in the `run()` function.
+Ahora, para arreglarlo, podríamos cambiar la función `input()` para procesar `DeviceEvent` en lugar de `WindowEvent`, pero los eventos de teclado y botones no se emiten como `DeviceEvent`s en MacOS y WASM. En su lugar, simplemente eliminaremos la verificación `CursorMoved` en `input()` y una llamada manual a `camera_controller.process_mouse()` en la función `run()`.
 
 ```rust
 // UPDATED!
@@ -369,7 +369,7 @@ fn input(&mut self, event: &WindowEvent) -> bool {
 }
 ```
 
-Here are the changes to `run()`:
+Aquí están los cambios a `run()`:
 
 ```rust
 fn main() {
@@ -416,7 +416,7 @@ fn main() {
 }
 ```
 
-The `update` function requires a bit more explanation. The `update_camera` function on the `CameraController` has a parameter `dt: Duration`, which is the delta time or time between frames. This is to help smooth out the camera movement so that it's not locked by the framerate. Currently, we aren't calculating `dt`, so I decided to pass it into `update` as a parameter.
+La función `update` requiere un poco más de explicación. La función `update_camera` en el `CameraController` tiene un parámetro `dt: Duration`, que es el tiempo delta o tiempo entre fotogramas. Esto es para ayudar a suavizar el movimiento de la cámara para que no esté bloqueado por la velocidad de fotogramas. Actualmente, no estamos calculando `dt`, así que decidí pasarlo a `update` como parámetro.
 
 ```rust
 fn update(&mut self, dt: instant::Duration) {
@@ -428,7 +428,7 @@ fn update(&mut self, dt: instant::Duration) {
 }
 ```
 
-While we're at it, let's also use `dt` for the light's rotation.
+Mientras estamos en eso, también usemos `dt` para la rotación de la luz.
 
 ```rust
 self.light_uniform.position =
@@ -436,7 +436,7 @@ self.light_uniform.position =
     * old_position).into(); // UPDATED!
 ```
 
-We still need to calculate `dt`. Let's do that in the `main` function.
+Aún necesitamos calcular `dt`. Hagamos eso en la función `main`.
 
 ```rust
 fn main() {
@@ -460,11 +460,11 @@ fn main() {
 }
 ```
 
-With that, we should be able to move our camera wherever we want.
+Con eso, deberíamos poder mover nuestra cámara a donde queramos.
 
 ![./screenshot.png](./screenshot.png)
 
-## Demo
+## Demostración
 
 <WasmExample example="tutorial12_camera"></WasmExample>
 

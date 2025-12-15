@@ -1,12 +1,12 @@
-# Creating gifs
+# Creando GIFs
 
-Sometimes you've created a nice simulation/animation, and you want to show it off. While you can record a video, that might be a bit overkill to break out your video recording if you just want something to post on Twitter. That's where what [GIF](https://en.wikipedia.org/wiki/GIF)s are for.
+A veces has creado una simulación/animación interesante y quieres exhibirla. Si bien puedes grabar un video, eso podría ser excesivo si solo quieres algo para publicar en Twitter. Para eso es para lo que sirven los [GIF](https://en.wikipedia.org/wiki/GIF)s.
 
-Also, GIF is pronounced GHIF, not JIF as JIF is not only [peanut butter](https://en.wikipedia.org/wiki/Jif_%28peanut_butter%29), it is also a [different image format](https://filext.com/file-extension/JIF).
+Además, GIF se pronuncia GHIF, no JIF ya que JIF no solo es [mantequilla de cacahuete](https://en.wikipedia.org/wiki/Jif_%28peanut_butter%29), sino que también es un [formato de imagen diferente](https://filext.com/file-extension/JIF).
 
-## How are we making the GIF?
+## ¿Cómo estamos creando el GIF?
 
-We're going to create a function using the [gif crate](https://docs.rs/gif/) to encode the actual image.
+Vamos a crear una función usando el [gif crate](https://docs.rs/gif/) para codificar la imagen actual.
 
 ```rust
 fn save_gif(path: &str, frames: &mut Vec<Vec<u8>>, speed: i32, size: u16) -> Result<(), failure::Error> {
@@ -41,11 +41,11 @@ fn save_gif(path: &str, frames: &mut Vec<Vec<u8>>, speed: i32, size: u16) -> Res
 }
 ``` -->
 
-All we need to use this code is the frames of the GIF, how fast it should run, and the size of the GIF (you could use width and height separately, but I didn't).
+Todo lo que necesitamos para usar este código son los fotogramas del GIF, qué tan rápido debería ejecutarse y el tamaño del GIF (podrías usar ancho y alto por separado, pero no lo hice).
 
-## How do we make the frames?
+## ¿Cómo hacemos los fotogramas?
 
-If you checked out the [windowless showcase](../windowless/#a-triangle-without-a-window), you'll know that we render directly to a `wgpu::Texture`. We'll create a texture to render to and a buffer to copy the output to.
+Si revisaste el [showcase sin ventana](../windowless/#a-triangle-without-a-window), sabrás que renderizamos directamente a una `wgpu::Texture`. Crearemos una textura para renderizar y un búfer para copiar la salida.
 
 ```rust
 // create a texture to render to
@@ -87,7 +87,7 @@ let buffer_desc = wgpu::BufferDescriptor {
 let output_buffer = device.create_buffer(&buffer_desc);
 ```
 
-With that, we can render a frame, and then copy that frame to a `Vec<u8>`.
+Con eso, podemos renderizar un fotograma y luego copiar ese fotograma a un `Vec<u8>`.
 
 ```rust
 let mut frames = Vec::new();
@@ -169,13 +169,13 @@ for c in &colors {
 }
 ```
 
-Once that's done we can pass our frames into `save_gif()`.
+Una vez hecho eso, podemos pasar nuestros fotogramas a `save_gif()`.
 
 ```rust
 save_gif("output.gif", &mut frames, 1, texture_size as u16).unwrap();
 ```
 
-That's the gist of it. We can improve things using a texture array, and sending the draw commands all at once, but this gets the idea across. With the shader I wrote we get the following GIF.
+Esa es la esencia. Podemos mejorar las cosas usando un arreglo de texturas y enviando todos los comandos de dibujo a la vez, pero esto comunica la idea. Con el shader que escribí obtenemos el siguiente GIF.
 
 
 ![./output.gif](./output.gif)

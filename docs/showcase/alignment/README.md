@@ -1,24 +1,24 @@
-# Memory Layout in WGSL
+# Diseño de Memoria en WGSL
 
 <div class="warn">
 
-This page is currently being reworked. I want to understand the topics a bit better, but as 0.12 is out I want to release what I have for now.
+Esta página se está reelaborando actualmente. Quiero entender los temas un poco mejor, pero como la versión 0.12 ya está disponible, quiero lanzar lo que tengo por ahora.
 
 </div>
 
-## Alignment of vertex and index buffers
+## Alineación de búferes de vértices e índices
 
-Vertex buffers require defining a `VertexBufferLayout`, so the memory alignment is whatever you tell WebGPU it should be. This can be really convenient for keeping down memory usage on the GPU.
+Los búferes de vértices requieren definir un `VertexBufferLayout`, por lo que la alineación de memoria es lo que le indiques a WebGPU que debe ser. Esto puede ser muy conveniente para reducir el uso de memoria en la GPU.
 
-The Index Buffer uses the alignment of whatever primitive type you specify via the `IndexFormat` you pass into `RenderEncoder::set_index_buffer()`.
+El búfer de índices utiliza la alineación del tipo primitivo que especifiques a través del `IndexFormat` que pasas a `RenderEncoder::set_index_buffer()`.
 
-## Alignment of Uniform and Storage buffers
+## Alineación de búferes Uniform y Storage
 
-GPUs are designed to process thousands of pixels in parallel. In order to achieve this, some sacrifices had to be made. Graphics hardware likes to have all the bytes you intend on processing aligned by powers of 2. The exact specifics of why this is are beyond my level of knowledge, but it's important to know so that you can troubleshoot why your shaders aren't working.
+Los GPUs están diseñados para procesar miles de píxeles en paralelo. Para lograr esto, fue necesario hacer algunos sacrificios. El hardware gráfico prefiere que todos los bytes que pretendas procesar estén alineados por potencias de 2. Los detalles exactos de por qué ocurre esto están más allá de mi nivel de conocimiento, pero es importante saberlo para que puedas solucionar los problemas por los que tus shaders no funcionan correctamente.
 
 <!-- The address of the position of an instance in memory has to be a multiple of its alignment. Normally alignment is the same as size. Exceptions are vec3, structs, and arrays. A vec3 is padded to be a vec4 which means it behaves as if it was a vec4 just that the last entry is not used. -->
 
-Let's take a look at the following table:
+Echemos un vistazo a la siguiente tabla:
 
 ---------------------------------------------------------------
 | Type                   | Alignment in Bytes | Size in Bytes |
@@ -28,9 +28,9 @@ Let's take a look at the following table:
 | vec3&lt;T&gt;          |             **16** |            12 |
 | vec4&lt;T&gt;          |                 16 |            16 |
 
-You can see for `vec3` the alignment is the next power of 2 from the size, 16. This can catch beginners (and even veterans) off guard as it's not the most intuitive. This becomes especially important when we start laying out structs. Take the light struct from the [lighting tutorial](../../intermediate/tutorial10-lighting/#seeing-the-light):
+Puedes ver que para `vec3` la alineación es la siguiente potencia de 2 respecto al tamaño, 16. Esto puede sorprender a principiantes (e incluso a veteranos) ya que no es la más intuitiva. Esto se vuelve especialmente importante cuando comenzamos a distribuir structs. Tomemos el struct de luz del [tutorial de iluminación](../../intermediate/tutorial10-lighting/#seeing-the-light):
 
-You can see the full table of the alignments in section [4.3.7.1 of the WGSL spec](https://www.w3.org/TR/WGSL/#alignment-and-size)
+Puedes ver la tabla completa de alineaciones en la sección [4.3.7.1 de la especificación WGSL](https://www.w3.org/TR/WGSL/#alignment-and-size)
 
 ```wgsl
 struct Light {
@@ -39,7 +39,7 @@ struct Light {
 }
 ```
 
-So what's the alignment of this struct? Your first guess would be that it's the sum of the alignments of the individual fields. That might make sense if we were in Rust-land, but in shader-land, it's a little more involved. The alignment for a given struct is given by the following equation:
+¿Cuál es entonces la alineación de este struct? Tu primera suposición sería que es la suma de las alineaciones de los campos individuales. Eso podría tener sentido si estuviéramos en el mundo de Rust, pero en el mundo de los shaders, es un poco más complicado. La alineación de un struct dado se da por la siguiente ecuación:
 
 ```
 // S is the struct in question
@@ -47,7 +47,7 @@ So what's the alignment of this struct? Your first guess would be that it's the 
 AlignOf(S) = max(AlignOfMember(S, M1), ... , AlignOfMember(S, Mn))
 ```
 
-Basically, the alignment of the struct is the maximum of the alignments of the members of the struct. This means that:
+Básicamente, la alineación del struct es el máximo de las alineaciones de los miembros del struct. Esto significa que:
 
 ```
 AlignOf(Light) 
@@ -56,11 +56,11 @@ AlignOf(Light)
     = 16
 ```
 
-This is why the `LightUniform` has those padding fields. WGPU won't accept it if the data is not aligned correctly.
+Por eso `LightUniform` tiene esos campos de relleno. WGPU no lo aceptará si los datos no están alineados correctamente.
 
-## How to deal with alignment issues
+## Cómo lidiar con problemas de alineación
 
-In general, 16 is the max alignment you'll see. In that case, you might think that we should be able to do something like the following:
+En general, 16 es la alineación máxima que verás. En ese caso, podrías pensar que deberíamos ser capaces de hacer algo como lo siguiente:
 
 ```rust
 #[repr(C, align(16))]
@@ -71,7 +71,7 @@ struct LightUniform {
 }
 ```
 
-But this won't compile. The [bytemuck crate](https://docs.rs/bytemuck/) doesn't work with structs with implicit padding bytes. Rust can't guarantee that the memory between the fields has been initialized properly. This gave me an error when I tried it:
+Pero esto no compilará. El [crate bytemuck](https://docs.rs/bytemuck/) no funciona con structs que tienen bytes de relleno implícitos. Rust no puede garantizar que la memoria entre los campos se haya inicializado correctamente. Esto me dio un error cuando lo intenté:
 
 ```
 error[E0512]: cannot transmute between types of different sizes, or dependently-sized types
@@ -84,6 +84,6 @@ error[E0512]: cannot transmute between types of different sizes, or dependently-
     = note: target type: `_::{closure#0}::TypeWithoutPadding` (192 bits)
 ```
 
-## Additional resources
+## Recursos adicionales
 
-If you're looking for more information check out the [write-up](https://gist.github.com/teoxoy/936891c16c2a3d1c3c5e7204ac6cd76c) by @teoxoy.
+Si estás buscando más información, consulta el [artículo](https://gist.github.com/teoxoy/936891c16c2a3d1c3c5e7204ac6cd76c) de @teoxoy.

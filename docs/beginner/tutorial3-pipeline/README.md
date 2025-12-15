@@ -1,51 +1,51 @@
-# The Pipeline
+# El Pipeline
 
-## What's a pipeline?
+## ¿Qué es un pipeline?
 
-If you're familiar with OpenGL, you may remember using shader programs. You can think of a pipeline as a more robust version of that. A pipeline describes all the actions the GPU will perform when acting on a set of data. In this section, we will be creating a `RenderPipeline` specifically.
+Si estás familiarizado con OpenGL, es posible que recuerdes usar programas de shaders. Puedes pensar en un pipeline como una versión más robusta de eso. Un pipeline describe todas las acciones que la GPU realizará al actuar sobre un conjunto de datos. En esta sección, crearemos específicamente un `RenderPipeline`.
 
-## Wait, shaders?
+## ¿Espera, shaders?
 
-Shaders are mini-programs that you send to the GPU to perform operations on your data. There are three main types of shaders: vertex, fragment, and compute. There are others, such as geometry shaders or tesselation shaders, but they're not supported by WebGL. They should be avoided in general ([see discussions](https://community.khronos.org/t/does-the-use-of-geometric-shaders-significantly-reduce-performance/106326)). For now, we're just going to use vertex and fragment shaders.
+Los shaders son mini-programas que envías a la GPU para realizar operaciones en tus datos. Hay tres tipos principales de shaders: vertex, fragment y compute. Hay otros, como shaders de geometría o shaders de teselación, pero no son compatibles con WebGL. Deben evitarse en general ([consulta las discusiones](https://community.khronos.org/t/does-the-use-of-geometric-shaders-significantly-reduce-performance/106326)). Por ahora, solo vamos a usar shaders de vertex y fragment.
 
-## Vertex, fragment... what are those?
+## Vertex, fragment... ¿qué son esos?
 
-A vertex is a point in 3D space (can also be 2D). These vertices are then bundled in groups of 2s to form lines and/or 3s to form triangles.
+Un vertex es un punto en el espacio 3D (también puede ser 2D). Estos vértices se agrupan en grupos de 2 para formar líneas y/o grupos de 3 para formar triángulos.
 
 <img alt="Vertices Graphic" src="./tutorial3-pipeline-vertices.png" />
 
-Most modern rendering uses triangles to make all shapes, from simple shapes (such as cubes) to complex ones (such as people). These triangles are stored as vertices, which are the points that make up the corners of the triangles.
+La mayoría del renderizado moderno utiliza triángulos para hacer todas las formas, desde formas simples (como cubos) hasta complejas (como personas). Estos triángulos se almacenan como vértices, que son los puntos que forman las esquinas de los triángulos.
 
 <!-- Todo: Find/make an image to put here -->
 
-We use a vertex shader to manipulate the vertices in order to transform the shape to look the way we want it.
+Usamos un vertex shader para manipular los vértices para transformar la forma como queremos que se vea.
 
-The vertices are then converted into fragments. Every pixel in the result image gets at least one fragment. Each fragment has a color that will be copied to its corresponding pixel. The fragment shader decides what color the fragment will be.
+Los vértices se convierten entonces en fragmentos. Cada píxel en la imagen resultante obtiene al menos un fragmento. Cada fragmento tiene un color que se copia en su píxel correspondiente. El fragment shader decide qué color tendrá el fragmento.
 
 ## WGSL
 
-[WebGPU Shading Language](https://www.w3.org/TR/WGSL/) (WGSL) is the shader language for WebGPU.
-WGSL's development focuses on getting it to easily convert into the shader language corresponding to the backend; for example, SPIR-V for Vulkan, MSL for Metal, HLSL for DX12, and GLSL for OpenGL.
-The conversion is done internally, and we usually don't need to care about the details.
-In the case of wgpu, it's done by the library called [naga](https://github.com/gfx-rs/wgpu/tree/trunk/naga).
+[WebGPU Shading Language](https://www.w3.org/TR/WGSL/) (WGSL) es el lenguaje de shader para WebGPU.
+El desarrollo de WGSL se enfoca en permitir que se convierta fácilmente al lenguaje de shader correspondiente del backend; por ejemplo, SPIR-V para Vulkan, MSL para Metal, HLSL para DX12 y GLSL para OpenGL.
+La conversión se realiza internamente y generalmente no necesitamos preocuparnos por los detalles.
+En el caso de wgpu, se realiza mediante la biblioteca llamada [naga](https://github.com/gfx-rs/wgpu/tree/trunk/naga).
 
-Note that, at the time of writing this, some WebGPU implementations also support SPIR-V, but it's just a temporary measure during the transition period to WGSL and will be removed (If you are curious about the drama behind SPIR-V and WGSL, please refer to [this blog post](https://kvark.github.io/spirv/2021/05/01/spirv-horrors.html)).
+Ten en cuenta que, en el momento de escribir esto, algunas implementaciones de WebGPU también admiten SPIR-V, pero es solo una medida temporal durante el período de transición a WGSL y se eliminará (Si tienes curiosidad sobre el drama detrás de SPIR-V y WGSL, consulta [esta entrada de blog](https://kvark.github.io/spirv/2021/05/01/spirv-horrors.html)).
 
 <div class="note">
 
-If you've gone through this tutorial before, you'll likely notice that I've switched from using GLSL to using WGSL. Given that GLSL support is a secondary concern and that WGSL is the first-class language of WGPU, I've elected to convert all the tutorials to use WGSL. Some showcase examples still use GLSL, but the main tutorial and all examples going forward will be using WGSL.
+Si has recorrido este tutorial antes, probablemente notarás que he cambiado de usar GLSL a usar WGSL. Dado que el soporte de GLSL es una preocupación secundaria y que WGSL es el lenguaje de primera clase de WGPU, he decidido convertir todos los tutoriales para usar WGSL. Algunos ejemplos de showcase aún usan GLSL, pero el tutorial principal y todos los ejemplos en adelante usarán WGSL.
 
 </div>
 
 <div class="note">
 
-The WGSL spec and its inclusion in WGPU are still in development. If you run into trouble using it, you may want the folks at [https://app.element.io/#/room/#wgpu:matrix.org](https://app.element.io/#/room/#wgpu:matrix.org) to take a look at your code.
+La especificación de WGSL y su inclusión en WGPU aún están en desarrollo. Si encuentras problemas al usarlo, es posible que quieras que la gente en [https://app.element.io/#/room/#wgpu:matrix.org](https://app.element.io/#/room/#wgpu:matrix.org) revise tu código.
 
 </div>
 
-## Writing the shaders
+## Escribiendo los shaders
 
-In the same folder as `main.rs`, create a file `shader.wgsl`. Write the following code in `shader.wgsl`.
+En la misma carpeta que `main.rs`, crea un archivo `shader.wgsl`. Escribe el siguiente código en `shader.wgsl`.
 
 ```wgsl
 // Vertex shader
@@ -66,50 +66,50 @@ fn vs_main(
 }
 ```
 
-First, we declare `struct` to store the output of our vertex shader. This currently consists of only one field, which is our vertex's `clip_position`. The `@builtin(position)` bit tells WGPU that this is the value we want to use as the vertex's [clip coordinates](https://en.wikipedia.org/wiki/Clip_coordinates). This is analogous to GLSL's `gl_Position` variable.
+Primero, declaramos un `struct` para almacenar la salida de nuestro vertex shader. Actualmente consta de un solo campo, que es la `clip_position` de nuestro vértice. El bit `@builtin(position)` le dice a WGPU que este es el valor que queremos usar como las [coordenadas de clip](https://en.wikipedia.org/wiki/Clip_coordinates) del vértice. Esto es análogo a la variable `gl_Position` de GLSL.
 
 <div class="note">
 
-Vector types such as `vec4` are generic. Currently, you must specify the type of value the vector will contain. Thus, a 3D vector using 32bit floats would be `vec3<f32>`.
+Los tipos de vectores como `vec4` son genéricos. Actualmente, debes especificar el tipo de valor que contendrá el vector. Por lo tanto, un vector 3D usando floats de 32 bits sería `vec3<f32>`.
 
 </div>
 
-The next part of the shader code is the `vs_main` function. We are using `@vertex` to mark this function as a valid entry point for a vertex shader. We expect a `u32` called `in_vertex_index`, which gets its value from `@builtin(vertex_index)`.
+La siguiente parte del código del shader es la función `vs_main`. Usamos `@vertex` para marcar esta función como un punto de entrada válido para un vertex shader. Esperamos un `u32` llamado `in_vertex_index`, que obtiene su valor de `@builtin(vertex_index)`.
 
-We then declare a variable called `out` using our `VertexOutput` struct. We create two other variables for the `x` and `y` of a triangle.
+Luego declaramos una variable llamada `out` usando nuestro struct `VertexOutput`. Creamos dos variables más para el `x` y `y` de un triángulo.
 
 <div class="note">
 
-The `f32()` and `i32()` bits are examples of casts.
+Los bits `f32()` e `i32()` son ejemplos de conversiones de tipo.
 
 </div>
 
 <div class="note">
 
-Variables defined with `var` can be modified but must specify their type. Variables created with `let` can have their types inferred, but their value cannot be changed during the shader.
+Las variables definidas con `var` se pueden modificar pero deben especificar su tipo. Las variables creadas con `let` pueden tener sus tipos inferidos, pero su valor no se puede cambiar durante el shader.
 
 </div>
 
-Now we can save our `clip_position` to `out`. We then just return `out`, and we're done with the vertex shader!
+Ahora podemos guardar nuestra `clip_position` en `out`. Luego solo devolvemos `out` y hemos terminado con el vertex shader.
 
 <div class="note">
 
-We technically didn't need a struct for this example and could have just done something like the following:
+Técnicamente no necesitábamos un struct para este ejemplo y podríamos haber hecho algo como lo siguiente:
 
 ```wgsl
 @vertex
 fn vs_main(
     @builtin(vertex_index) in_vertex_index: u32
 ) -> @builtin(position) vec4<f32> {
-    // Vertex shader code...
+    // Código del vertex shader...
 }
 ```
 
-We'll be adding more fields to `VertexOutput` later, so we might as well start using it now.
+Agregaremos más campos a `VertexOutput` más adelante, así que bien podemos empezar a usarlo ahora.
 
 </div>
 
-Next up, the fragment shader. Still in `shader.wgsl` add the following:
+A continuación, el fragment shader. Aún en `shader.wgsl` agrega lo siguiente:
 
 ```wgsl
 // Fragment shader
@@ -120,19 +120,19 @@ fn fs_main(in: VertexOutput) -> @location(0) vec4<f32> {
 }
 ```
 
-This sets the color of the current fragment to brown.
+Esto establece el color del fragmento actual a marrón.
 
 <div class="note">
 
-Notice that the entry point for the vertex shader was named `vs_main` and that the entry point for the fragment shader is called `fs_main`. In earlier versions of wgpu, it was ok for both these functions to have the same name, but newer versions of the [WGSL spec](https://www.w3.org/TR/WGSL/#declaration-and-scope) require these names to be different. Therefore, the above-mentioned naming scheme (which is adopted from the `wgpu` examples) is used throughout the tutorial.
+Ten en cuenta que el punto de entrada para el vertex shader se llamaba `vs_main` y que el punto de entrada para el fragment shader se llama `fs_main`. En versiones anteriores de wgpu, estaba bien que ambas funciones tuvieran el mismo nombre, pero las versiones más nuevas de la [especificación WGSL](https://www.w3.org/TR/WGSL/#declaration-and-scope) requieren que estos nombres sean diferentes. Por lo tanto, el esquema de nombres mencionado anteriormente (que se adopta de los ejemplos de `wgpu`) se usa en todo el tutorial.
 
 </div>
 
-The `@location(0)` bit tells WGPU to store the `vec4` value returned by this function in the first color target. We'll get into what this is later.
+El bit `@location(0)` le dice a WGPU que almacene el valor `vec4` devuelto por esta función en el primer destino de color. Entraremos en más detalle sobre qué es esto más adelante.
 
 <div class="note">
 
-Something to note about `@builtin(position)`, in the fragment shader, this value is in [framebuffer space](https://gpuweb.github.io/gpuweb/#coordinate-systems). This means that if your window is 800x600, the x and y of `clip_position` would be between 0-800 and 0-600, respectively, with the y = 0 being the top of the screen. This can be useful if you want to know the pixel coordinates of a given fragment, but if you want the position coordinates, you'll have to pass them in separately.
+Algo a tener en cuenta sobre `@builtin(position)`, en el fragment shader, este valor está en [espacio de framebuffer](https://gpuweb.github.io/gpuweb/#coordinate-systems). Esto significa que si tu ventana es 800x600, x e y de `clip_position` estarían entre 0-800 y 0-600, respectivamente, siendo y = 0 en la parte superior de la pantalla. Esto puede ser útil si quieres conocer las coordenadas de píxel de un fragmento dado, pero si quieres las coordenadas de posición, tendrás que pasarlas por separado.
 
 ```wgsl
 struct VertexOutput {
@@ -155,9 +155,9 @@ fn vs_main(
 
 </div>
 
-## How do we use the shaders?
+## ¿Cómo usamos los shaders?
 
-This is the part where we finally make the thing in the title: the pipeline. First, let's modify `State` to include the following.
+Esta es la parte donde finalmente hacemos lo que se menciona en el título: el pipeline. Primero, modifiquemos `State` para incluir lo siguiente.
 
 ```rust
 // lib.rs
@@ -173,7 +173,7 @@ pub struct State {
 }
 ```
 
-Now, let's move to the `new()` method and start making the pipeline. We'll have to load in those shaders we made earlier, as the `render_pipeline` requires those.
+Ahora, pasemos al método `new()` y comencemos a hacer el pipeline. Tendremos que cargar los shaders que hicimos anteriormente, ya que el `render_pipeline` los requiere.
 
 ```rust
 let shader = device.create_shader_module(wgpu::ShaderModuleDescriptor {
@@ -184,7 +184,7 @@ let shader = device.create_shader_module(wgpu::ShaderModuleDescriptor {
 
 <div class="note">
 
-You can also use `include_wgsl!` macro as a small shortcut to create the `ShaderModuleDescriptor`.
+También puedes usar la macro `include_wgsl!` como un pequeño atajo para crear el `ShaderModuleDescriptor`.
 
 ```rust
 let shader = device.create_shader_module(wgpu::include_wgsl!("shader.wgsl"));
@@ -192,7 +192,7 @@ let shader = device.create_shader_module(wgpu::include_wgsl!("shader.wgsl"));
 
 </div>
 
-One more thing, we need to create a `PipelineLayout`. We'll get more into this after we cover `Buffer`s.
+Una cosa más, necesitamos crear un `PipelineLayout`. Entraremos en más detalle sobre esto después de cubrir los `Buffer`s.
 
 ```rust
 let render_pipeline_layout =
@@ -203,7 +203,7 @@ let render_pipeline_layout =
     });
 ```
 
-Finally, we have all we need to create the `render_pipeline`.
+Finalmente, tenemos todo lo que necesitamos para crear el `render_pipeline`.
 
 ```rust
 let render_pipeline = device.create_render_pipeline(&wgpu::RenderPipelineDescriptor {
@@ -228,12 +228,12 @@ let render_pipeline = device.create_render_pipeline(&wgpu::RenderPipelineDescrip
     // continued ...
 ```
 
-Several things to note here:
+Hay varias cosas a tener en cuenta aquí:
 
-1. Here you can specify which function inside the shader should be the `entry_point`. These are the functions we marked with `@vertex` and `@fragment`
-2. The `buffers` field tells `wgpu` what type of vertices we want to pass to the vertex shader. We're specifying the vertices in the vertex shader itself, so we'll leave this empty. We'll put something there in the next tutorial.
-3. The `fragment` is technically optional, so you have to wrap it in `Some()`. We need it if we want to store color data to the `surface`.
-4. The `targets` field tells `wgpu` what color outputs it should set up. Currently, we only need one for the `surface`. We use the `surface`'s format so that copying to it is easy, and we specify that the blending should just replace old pixel data with new data. We also tell `wgpu` to write to all colors: red, blue, green, and alpha. *We'll talk more about* `color_state` *when we talk about textures.*
+1. Aquí puedes especificar qué función dentro del shader debe ser el `entry_point`. Estas son las funciones que marcamos con `@vertex` y `@fragment`
+2. El campo `buffers` le dice a `wgpu` qué tipo de vértices queremos pasar al vertex shader. Estamos especificando los vértices en el propio vertex shader, así que dejaremos esto vacío. Pondremos algo aquí en el siguiente tutorial.
+3. El `fragment` es técnicamente opcional, así que tienes que envolverlo en `Some()`. Lo necesitamos si queremos almacenar datos de color en la `surface`.
+4. El campo `targets` le dice a `wgpu` qué salidas de color debe configurar. Actualmente, solo necesitamos una para la `surface`. Usamos el formato de `surface` para que copiar sea fácil, y especificamos que la mezcla solo debe reemplazar datos de píxeles antiguos con nuevos. También le decimos a `wgpu` que escriba en todos los colores: rojo, azul, verde y alfa. *Hablaremos más sobre* `color_state` *cuando hablemos sobre texturas.*
 
 ```rust
     primitive: wgpu::PrimitiveState {
@@ -248,13 +248,13 @@ Several things to note here:
         // Requires Features::CONSERVATIVE_RASTERIZATION
         conservative: false,
     },
-    // continued ...
+    // continuado...
 ```
 
-The `primitive` field describes how to interpret our vertices when converting them into triangles.
+El campo `primitive` describe cómo interpretar nuestros vértices al convertirlos en triángulos.
 
-1. Using `PrimitiveTopology::TriangleList` means that every three vertices will correspond to one triangle.
-2. The `front_face` and `cull_mode` fields tell `wgpu` how to determine whether a given triangle is facing forward or not. `FrontFace::Ccw` means that a triangle is facing forward if the vertices are arranged in a counter-clockwise direction. Triangles that are not considered facing forward are culled (not included in the render) as specified by `CullMode::Back`. We'll cover culling a bit more when we cover `Buffer`s.
+1. Usar `PrimitiveTopology::TriangleList` significa que cada tres vértices corresponderán a un triángulo.
+2. Los campos `front_face` y `cull_mode` le dicen a `wgpu` cómo determinar si un triángulo dado está mirando hacia adelante o no. `FrontFace::Ccw` significa que un triángulo está mirando hacia adelante si los vértices están dispuestos en sentido antihorario. Los triángulos que no se consideran mirando hacia adelante se descartan (no se incluyen en el renderizado) como se especifica por `CullMode::Back`. Cubriremos más sobre culling cuando cubramos los `Buffer`s.
 
 ```rust
     depth_stencil: None, // 1.
@@ -268,18 +268,18 @@ The `primitive` field describes how to interpret our vertices when converting th
 });
 ```
 
-The rest of the method is pretty simple:
+El resto del método es bastante simple:
 
-1. We're not using a depth/stencil buffer currently, so we leave `depth_stencil` as `None`. *This will change later*.
-2. `count` determines how many samples the pipeline will use. Multisampling is a complex topic, so we won't get into it here.
-3. `mask` specifies which samples should be active. In this case, we are using all of them.
-4. `alpha_to_coverage_enabled` has to do with anti-aliasing. We're not covering anti-aliasing here, so we'll leave this as false now.
-5. `multiview` indicates how many array layers the render attachments can have. We won't be rendering to array textures, so we can set this to `None`.
-6. `cache` allows wgpu to cache shader compilation data. Only really useful for Android build targets.
+1. No estamos usando un búfer de profundidad/stencil actualmente, así que dejamos `depth_stencil` como `None`. *Esto cambiará más adelante*.
+2. `count` determina cuántas muestras usará el pipeline. El multimuestreo es un tema complejo, así que no entraremos en detalles aquí.
+3. `mask` especifica qué muestras deben estar activas. En este caso, estamos usando todas ellas.
+4. `alpha_to_coverage_enabled` tiene que ver con el suavizado. No cubrimos el suavizado aquí, así que dejaremos esto como falso por ahora.
+5. `multiview` indica cuántas capas de matriz pueden tener los archivos adjuntos de renderizado. No renderizaremos a texturas de matriz, así que podemos establecer esto en `None`.
+6. `cache` permite a wgpu almacenar en caché datos de compilación de shaders. Solo es realmente útil para objetivos de compilación de Android.
 
 <!-- https://gamedev.stackexchange.com/questions/22507/what-is-the-alphatocoverage-blend-state-useful-for -->
 
-Now, all we have to do is add the `render_pipeline` to `State`, and then we can use it!
+Ahora, todo lo que tenemos que hacer es agregar el `render_pipeline` a `State`, y luego podemos usarlo.
 
 ```rust
 // new()
@@ -294,9 +294,9 @@ Ok(Self {
 })
 ```
 
-## Using a pipeline
+## Usando un pipeline
 
-If you run your program now, it'll take a little longer to start, but it will still show the blue screen we got in the last section. That's because we created the `render_pipeline`, but we still need to modify the code in `render()` to actually use it.
+Si ejecutas tu programa ahora, tardará un poco más en iniciarse, pero aún mostrará la pantalla azul que obtuvimos en la sección anterior. Esto se debe a que creamos el `render_pipeline`, pero aún necesitamos modificar el código en `render()` para usarlo realmente.
 
 ```rust
 // render()
@@ -334,15 +334,15 @@ If you run your program now, it'll take a little longer to start, but it will st
 // ...
 ```
 
-We didn't change much, but let's talk about what we did change.
+No cambiamos mucho, pero hablemos sobre qué cambiamos.
 
-1. We renamed `_render_pass` to `render_pass` and made it mutable.
-2. We set the pipeline on the `render_pass` using the one we just created.
-3. We tell `wgpu` to draw *something* with three vertices and one instance. This is where `@builtin(vertex_index)` comes from.
+1. Renombramos `_render_pass` a `render_pass` y lo hicimos mutable.
+2. Establecimos el pipeline en el `render_pass` usando el que acabamos de crear.
+3. Le decimos a `wgpu` que dibuje *algo* con tres vértices y una instancia. Aquí es de donde viene `@builtin(vertex_index)`.
 
-With all that you should be seeing a lovely brown triangle.
+Con todo eso deberías estar viendo un hermoso triángulo marrón.
 
-![Said lovely brown triangle](./tutorial3-pipeline-triangle.png)
+![Dicho hermoso triángulo marrón](./tutorial3-pipeline-triangle.png)
 
 ## Demo
 
@@ -350,6 +350,6 @@ With all that you should be seeing a lovely brown triangle.
 
 <AutoGithubLink/>
 
-## Challenge
+## Desafío
 
-Create a second pipeline that uses the triangle's position data to create a color that it then sends to the fragment shader. Have the app swap between these when you press the spacebar. *Hint: you'll need to modify* `VertexOutput`
+Crea un segundo pipeline que use los datos de posición del triángulo para crear un color que luego envíe al fragment shader. Haz que la aplicación alterne entre estos cuando presiones la barra espaciadora. *Pista: necesitarás modificar* `VertexOutput`

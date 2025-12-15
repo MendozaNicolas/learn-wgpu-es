@@ -1,16 +1,16 @@
-# Buffers and Indices
+# Búferes e Índices
 
-## We're finally talking about them!
+## ¡Finalmente vamos a hablar de ellos!
 
-You were probably getting sick of me saying stuff like, "We'll get to that when we talk about buffers". Well, now's the time to finally talk about buffers, but first...
+Probablemente ya estabas cansado de que dijera cosas como "Hablaremos de eso cuando hablemos de búferes". Bueno, ahora es el momento de finalmente hablar sobre búferes, pero primero...
 
-## What is a buffer?
+## ¿Qué es un búfer?
 
-A buffer is a blob of data on the GPU. A buffer is guaranteed to be contiguous, meaning that all the data is stored sequentially in memory. Buffers are generally used to store simple things like structs or arrays, but they can store more complex stuff such as graph structures like trees (provided all the nodes are stored together and don't reference anything outside the buffer). We are going to use buffers a lot, so let's get started with two of the most important ones: the vertex buffer and the index buffer.
+Un búfer es un blob de datos en la GPU. Se garantiza que un búfer es contiguo, lo que significa que todos los datos se almacenan secuencialmente en la memoria. Los búferes se utilizan generalmente para almacenar cosas simples como estructuras o matrices, pero pueden almacenar cosas más complejas como estructuras de gráficos como árboles (siempre que todos los nodos se almacenen juntos y no hagan referencia a nada fuera del búfer). Vamos a usar búferes mucho, así que empecemos con dos de los más importantes: el búfer de vértices y el búfer de índices.
 
-## The vertex buffer
+## El búfer de vértices
 
-Previously, we've stored vertex data directly in the vertex shader. While that worked fine to get our bootstraps on, it simply won't do for the long term. The types of objects we need to draw will vary in size, and recompiling the shader whenever we need to update the model would massively slow down our program. Instead, we are going to use buffers to store the vertex data we want to draw. Before we do that, though, we need to describe what a vertex looks like. We'll do this by creating a new struct.
+Anteriormente, hemos almacenado datos de vértices directamente en el sombreador de vértices. Aunque eso funcionó bien para arrancar, simplemente no funcionará a largo plazo. Los tipos de objetos que necesitamos dibujar variarán en tamaño, y recompilar el sombreador cada vez que necesitemos actualizar el modelo ralentizaría enormemente nuestro programa. En su lugar, vamos a usar búferes para almacenar los datos de vértices que queremos dibujar. Antes de hacer eso, sin embargo, necesitamos describir cómo se ve un vértice. Haremos esto creando una nueva estructura.
 
 ```rust
 // lib.rs
@@ -22,9 +22,9 @@ struct Vertex {
 }
 ```
 
-Our vertices will all have a position and a color. The position represents the x, y, and z of the vertex in 3d space. The color is the red, green, and blue values for the vertex. We need the `Vertex` to be `Copy` so we can create a buffer with it.
+Nuestros vértices tendrán una posición y un color. La posición representa las coordenadas x, y y z del vértice en el espacio 3D. El color son los valores de rojo, verde y azul para el vértice. Necesitamos que `Vertex` sea `Copy` para poder crear un búfer con él.
 
-Next, we need the actual data that will make up our triangle. Below `Vertex`, add the following.
+A continuación, necesitamos los datos reales que formarán nuestro triángulo. Debajo de `Vertex`, añade lo siguiente.
 
 ```rust
 // lib.rs
@@ -35,9 +35,9 @@ const VERTICES: &[Vertex] = &[
 ];
 ```
 
-We arrange the vertices in counter-clockwise order: top, bottom left, bottom right. We do it this way partially out of tradition, but mostly because we specified in the `primitive` of the `render_pipeline` that we want the `front_face` of our triangle to be `wgpu::FrontFace::Ccw` so that we cull the back face. This means that any triangle that should be facing us should have its vertices in counter-clockwise order.
+Disponemos los vértices en orden contrario al reloj: arriba, abajo a la izquierda, abajo a la derecha. Hacemos esto parcialmente por tradición, pero principalmente porque especificamos en el `primitive` del `render_pipeline` que queremos que la `front_face` de nuestro triángulo sea `wgpu::FrontFace::Ccw` para descartar la cara trasera. Esto significa que cualquier triángulo que deba estar de frente a nosotros debe tener sus vértices en orden contrario al reloj.
 
-Now that we have our vertex data, we need to store it in a buffer. Let's add a `vertex_buffer` field to `State`.
+Ahora que tenemos nuestros datos de vértices, necesitamos almacenarlos en un búfer. Añadamos un campo `vertex_buffer` a `State`.
 
 ```rust
 // lib.rs
@@ -52,7 +52,7 @@ pub struct State {
 }
 ```
 
-Now let's create the buffer in `new()`.
+Ahora vamos a crear el búfer en `new()`.
 
 ```rust
 // new()
@@ -65,21 +65,21 @@ let vertex_buffer = device.create_buffer_init(
 );
 ```
 
-To access the `create_buffer_init` method on `wgpu::Device`, we'll have to import the [DeviceExt](https://docs.rs/wgpu/latest/wgpu/util/trait.DeviceExt.html#tymethod.create_buffer_init) extension trait. For more information on extension traits, check out [this article](http://xion.io/post/code/rust-extension-traits.html).
+Para acceder al método `create_buffer_init` en `wgpu::Device`, tendremos que importar la característica de extensión [DeviceExt](https://docs.rs/wgpu/latest/wgpu/util/trait.DeviceExt.html#tymethod.create_buffer_init). Para obtener más información sobre características de extensión, consulta [este artículo](http://xion.io/post/code/rust-extension-traits.html).
 
-To import the extension trait, put this line somewhere near the top of `lib.rs`.
+Para importar la característica de extensión, coloca esta línea en algún lugar cerca de la parte superior de `lib.rs`.
 
 ```rust
 use wgpu::util::DeviceExt;
 ```
 
-You'll note that we're using [bytemuck](https://docs.rs/bytemuck/latest/bytemuck/) to cast our `VERTICES` as a `&[u8]`. The `create_buffer_init()` method expects a `&[u8]`, and `bytemuck::cast_slice` does that for us. Add the following to your `Cargo.toml`.
+Observa que estamos usando [bytemuck](https://docs.rs/bytemuck/latest/bytemuck/) para convertir nuestras `VERTICES` como `&[u8]`. El método `create_buffer_init()` espera `&[u8]`, y `bytemuck::cast_slice` hace eso por nosotros. Añade lo siguiente a tu `Cargo.toml`.
 
 ```toml
 bytemuck = { version = "1.24", features = [ "derive" ] }
 ```
 
-We're also going to need to implement two traits to get `bytemuck` to work. These are [bytemuck::Pod](https://docs.rs/bytemuck/latest/bytemuck/trait.Pod.html) and [bytemuck::Zeroable](https://docs.rs/bytemuck/latest/bytemuck/trait.Zeroable.html). `Pod` indicates that our `Vertex` is "Plain Old Data", and thus can be interpreted as a `&[u8]`. `Zeroable` indicates that we can use `std::mem::zeroed()`. We can modify our `Vertex` struct to derive these methods.
+También necesitaremos implementar dos características para que `bytemuck` funcione. Estas son [bytemuck::Pod](https://docs.rs/bytemuck/latest/bytemuck/trait.Pod.html) y [bytemuck::Zeroable](https://docs.rs/bytemuck/latest/bytemuck/trait.Zeroable.html). `Pod` indica que nuestro `Vertex` es "Plain Old Data" (Datos Antiguos Simples), y por lo tanto puede interpretarse como `&[u8]`. `Zeroable` indica que podemos usar `std::mem::zeroed()`. Podemos modificar nuestra estructura `Vertex` para derivar estos métodos.
 
 ```rust
 #[repr(C)]
@@ -92,7 +92,7 @@ struct Vertex {
 
 <div class="note">
 
-If your struct includes types that don't implement `Pod` and `Zeroable`, you'll need to implement these traits manually. These traits don't require us to implement any methods, so we just need to use the following to get our code to work.
+Si tu estructura incluye tipos que no implementan `Pod` y `Zeroable`, tendrás que implementar estas características manualmente. Estas características no requieren que implementemos ningún método, así que solo necesitamos usar lo siguiente para que nuestro código funcione.
 
 ```rust
 unsafe impl bytemuck::Pod for Vertex {}
@@ -101,7 +101,7 @@ unsafe impl bytemuck::Zeroable for Vertex {}
 
 </div>
 
-Finally, we can add our `vertex_buffer` to our `State` struct.
+Finalmente, podemos añadir nuestro `vertex_buffer` a nuestra estructura `State`.
 
 ```rust
 Ok(Self {
@@ -116,11 +116,11 @@ Ok(Self {
 })
 ```
 
-## So, what do I do with it?
+## Entonces, ¿qué hago con él?
 
-We need to tell the `render_pipeline` to use this buffer when we are drawing, but first, we need to tell the `render_pipeline` how to read the buffer. We do this using `VertexBufferLayout`s and the `vertex_buffers` field that I promised we'd talk about when we created the `render_pipeline`.
+Necesitamos decirle al `render_pipeline` que use este búfer cuando estemos dibujando, pero primero, necesitamos decirle al `render_pipeline` cómo leer el búfer. Hacemos esto usando `VertexBufferLayout` y el campo `vertex_buffers` que prometí que hablaríamos cuando creamos el `render_pipeline`.
 
-A `VertexBufferLayout` defines how a buffer is represented in memory. Without this, the render_pipeline has no idea how to map the buffer in the shader. Here's what the descriptor for a buffer full of `Vertex` would look like.
+Un `VertexBufferLayout` define cómo se representa un búfer en la memoria. Sin esto, el render_pipeline no tiene idea de cómo mapear el búfer en el sombreador. Así es como se vería el descriptor para un búfer lleno de `Vertex`.
 
 ```rust
 wgpu::VertexBufferLayout {
@@ -141,18 +141,18 @@ wgpu::VertexBufferLayout {
 }
 ```
 
-1. The `array_stride` defines how wide a vertex is. When the shader goes to read the next vertex, it will skip over the `array_stride` number of bytes. In our case, array_stride will probably be 24 bytes.
-2. `step_mode` tells the pipeline whether each element of the array in this buffer represents per-vertex data or per-instance data. We can specify `wgpu::VertexStepMode::Instance` if we only want to change vertices when we start drawing a new instance. We'll cover instancing in a later tutorial.
-3. Vertex attributes describe the individual parts of the vertex. Generally, this is a 1:1 mapping with a struct's fields, which is true in our case.
-4. This defines the `offset` in bytes until the attribute starts. For the first attribute, the offset is usually zero. For any later attributes, the offset is the sum over `size_of` of the previous attributes' data.
-5. This tells the shader what location to store this attribute at. For example, `@location(0) x: vec3<f32>` in the vertex shader would correspond to the `position` field of the `Vertex` struct, while `@location(1) x: vec3<f32>` would be the `color` field.
-6. `format` tells the shader the shape of the attribute. `Float32x3` corresponds to `vec3<f32>` in shader code. The max value we can store in an attribute is `Float32x4` (`Uint32x4`, and `Sint32x4` work as well). We'll keep this in mind for when we have to store things that are bigger than `Float32x4`.
+1. El `array_stride` define cuán ancho es un vértice. Cuando el sombreador va a leer el siguiente vértice, saltará sobre el número de bytes `array_stride`. En nuestro caso, array_stride será probablemente 24 bytes.
+2. `step_mode` le dice al pipeline si cada elemento de la matriz en este búfer representa datos por vértice o datos por instancia. Podemos especificar `wgpu::VertexStepMode::Instance` si solo queremos cambiar vértices cuando comenzamos a dibujar una nueva instancia. Cubriremos la instanciación en un tutorial posterior.
+3. Los atributos de vértice describen las partes individuales del vértice. Generalmente, esto es un mapeo 1:1 con los campos de una estructura, que es el caso en nuestro.
+4. Esto define el `offset` en bytes hasta que comienza el atributo. Para el primer atributo, el offset suele ser cero. Para cualquier atributo posterior, el offset es la suma sobre `size_of` de los datos de los atributos anteriores.
+5. Esto le dice al sombreador en qué ubicación almacenar este atributo. Por ejemplo, `@location(0) x: vec3<f32>` en el sombreador de vértices correspondería al campo `position` de la estructura `Vertex`, mientras que `@location(1) x: vec3<f32>` sería el campo `color`.
+6. `format` le dice al sombreador la forma del atributo. `Float32x3` corresponde a `vec3<f32>` en el código del sombreador. El valor máximo que podemos almacenar en un atributo es `Float32x4` (`Uint32x4` y `Sint32x4` también funcionan). Tendremos esto en cuenta para cuando tengamos que almacenar cosas que son más grandes que `Float32x4`.
 
-For you visual learners, our vertex buffer looks like this.
+Para los aprendices visuales, nuestro búfer de vértices se ve así.
 
 ![A figure of the VertexBufferLayout](./vb_desc.png)
 
-Let's create a static method on `Vertex` that returns this descriptor.
+Vamos a crear un método estático en `Vertex` que devuelva este descriptor.
 
 ```rust
 // lib.rs
@@ -180,7 +180,7 @@ impl Vertex {
 
 <div class="note">
 
-Specifying the attributes as we did now is quite verbose. We could use the `vertex_attr_array` macro provided by wgpu to clean things up a bit. With it, our `VertexBufferLayout` becomes
+Especificar los atributos como lo hicimos ahora es bastante detallado. Podríamos usar la macro `vertex_attr_array` proporcionada por wgpu para limpiar un poco las cosas. Con ella, nuestro `VertexBufferLayout` se convierte en
 
 ```rust
 wgpu::VertexBufferLayout {
@@ -190,7 +190,7 @@ wgpu::VertexBufferLayout {
 }
 ```
 
-While this is definitely nice, Rust sees the result of `vertex_attr_array` as a temporary value, so a tweak is required to return it from a function. We could [make it `const`](https://github.com/gfx-rs/wgpu/discussions/1790#discussioncomment-1160378), as in the example below:
+Aunque esto es definitivamente agradable, Rust ve el resultado de `vertex_attr_array` como un valor temporal, por lo que se requiere un ajuste para devolverlo desde una función. Podríamos [hacerlo `const`](https://github.com/gfx-rs/wgpu/discussions/1790#discussioncomment-1160378), como en el ejemplo a continuación:
 
 ```rust
 impl Vertex {
@@ -209,11 +209,11 @@ impl Vertex {
 }
 ```
 
-Regardless, I feel it's good to show how the data gets mapped, so I'll forgo using this macro for now.
+De cualquier manera, creo que es bueno mostrar cómo se asignan los datos, así que omitré el uso de esta macro por ahora.
 
 </div>
 
-Now, we can use it when we create the `render_pipeline`.
+Ahora, podemos usarlo cuando creemos el `render_pipeline`.
 
 ```rust
 let render_pipeline = device.create_render_pipeline(&wgpu::RenderPipelineDescriptor {
@@ -228,7 +228,7 @@ let render_pipeline = device.create_render_pipeline(&wgpu::RenderPipelineDescrip
 });
 ```
 
-One more thing: we need to actually set the vertex buffer in the render method. Otherwise, our program will crash.
+Una cosa más: necesitamos establecer el búfer de vértices en el método render. De lo contrario, nuestro programa se bloqueará.
 
 ```rust
 // render()
@@ -238,11 +238,11 @@ render_pass.set_vertex_buffer(0, self.vertex_buffer.slice(..));
 render_pass.draw(0..3, 0..1);
 ```
 
-`set_vertex_buffer` takes two parameters. The first is what buffer slot to use for this vertex buffer. You can have multiple vertex buffers set at a time.
+`set_vertex_buffer` toma dos parámetros. El primero es qué ranura de búfer usar para este búfer de vértices. Puedes tener múltiples búferes de vértices establecidos al mismo tiempo.
 
-The second parameter is the slice of the buffer to use. You can store as many objects in a buffer as your hardware allows, so `slice` allows us to specify which portion of the buffer to use. We use `..` to specify the entire buffer.
+El segundo parámetro es la porción del búfer a usar. Puedes almacenar tantos objetos en un búfer como tu hardware permita, por lo que `slice` nos permite especificar qué porción del búfer usar. Usamos `..` para especificar el búfer completo.
 
-Before we continue, we should change the `render_pass.draw()` call to use the number of vertices specified by `VERTICES`. Add a `num_vertices` to `State`, and set it to be equal to `VERTICES.len()`.
+Antes de continuar, debemos cambiar la llamada `render_pass.draw()` para usar el número de vértices especificado por `VERTICES`. Añade un `num_vertices` a `State`, y establécelo igual a `VERTICES.len()`.
 
 ```rust
 // lib.rs
@@ -273,14 +273,14 @@ impl State {
 }
 ```
 
-Then, use it in the draw call.
+Luego, úsalo en la llamada de dibujo.
 
 ```rust
 // render
 render_pass.draw(0..self.num_vertices, 0..1);
 ```
 
-Before our changes will have any effect, we need to update our vertex shader to get its data from the vertex buffer. We'll also have it include the vertex color as well.
+Antes de que nuestros cambios tengan efecto, necesitamos actualizar nuestro sombreador de vértices para obtener sus datos del búfer de vértices. También haremos que incluya el color del vértice.
 
 ```wgsl
 // Vertex shader
@@ -313,16 +313,16 @@ fn fs_main(in: VertexOutput) -> @location(0) vec4<f32> {
 }
 ```
 
-If you've done things correctly, you should see a triangle that looks something like this.
+Si has hecho las cosas correctamente, deberías ver un triángulo que se vea algo así.
 
 ![A colorful triangle](./triangle.png)
 
-## The index buffer
-We technically don't *need* an index buffer, but they still are plenty useful. An index buffer comes into play when we start using models with a lot of triangles. Consider this pentagon.
+## El búfer de índices
+Técnicamente, no *necesitamos* un búfer de índices, pero aún son muy útiles. Un búfer de índices entra en juego cuando comenzamos a usar modelos con muchos triángulos. Considera este pentágono.
 
 ![A pentagon made of 3 triangles](./pentagon.png)
 
-It has a total of 5 vertices and 3 triangles. Now, if we wanted to display something like this using just vertices, we would need something like the following.
+Tiene un total de 5 vértices y 3 triángulos. Ahora, si quisiéramos mostrar algo así usando solo vértices, necesitaríamos algo como lo siguiente.
 
 ```rust
 const VERTICES: &[Vertex] = &[
@@ -340,9 +340,9 @@ const VERTICES: &[Vertex] = &[
 ];
 ```
 
-You'll note, though, that some of the vertices are used more than once. C and B are used twice, and E is repeated three times. Assuming that each float is 4 bytes, then that means of the 216 bytes we use for `VERTICES`, 96 of them are duplicate data. Wouldn't it be nice if we could list these vertices once? Well, we can! That's where an index buffer comes into play.
+Observa, sin embargo, que algunos de los vértices se utilizan más de una vez. C y B se utilizan dos veces, y E se repite tres veces. Asumiendo que cada flotante tiene 4 bytes, eso significa que de los 216 bytes que usamos para `VERTICES`, 96 de ellos son datos duplicados. ¿No sería agradable si pudiéramos enumerar estos vértices una sola vez? ¡Bueno, podemos! Ahí es donde entra en juego un búfer de índices.
 
-Basically, we store all the unique vertices in `VERTICES`, and we create another buffer that stores indices to elements in `VERTICES` to create the triangles. Here's an example of that with our pentagon.
+Básicamente, almacenamos todos los vértices únicos en `VERTICES`, y creamos otro búfer que almacena índices a elementos en `VERTICES` para crear los triángulos. Aquí hay un ejemplo de eso con nuestro pentágono.
 
 ```rust
 // lib.rs
@@ -361,9 +361,9 @@ const INDICES: &[u16] = &[
 ];
 ```
 
-Now, with this setup, our `VERTICES` take up about 120 bytes and `INDICES` is just 18 bytes, given that `u16` is 2 bytes wide. In this case, wgpu automatically adds 2 extra bytes of padding to make sure the buffer is aligned to 4 bytes, but it's still just 20 bytes. Altogether, our pentagon is 140 bytes in total. That means we saved 76 bytes! It may not seem like much, but when dealing with tri counts in the hundreds of thousands, indexing saves a lot of memory. Please note, that the order of the indices matters. In the example above, the triangles are created counterclockwise. If you want to change it to clockwise, go to your render pipeline and change the `front_face` to `Cw`.  
+Ahora, con esta configuración, nuestras `VERTICES` ocupan aproximadamente 120 bytes e `INDICES` es solo 18 bytes, dado que `u16` tiene 2 bytes de ancho. En este caso, wgpu añade automáticamente 2 bytes adicionales de relleno para asegurar que el búfer esté alineado a 4 bytes, pero sigue siendo solo 20 bytes. En total, nuestro pentágono tiene 140 bytes. ¡Eso significa que ahorramos 76 bytes! Podría no parecer mucho, pero cuando se trata de conteos de triángulos en cientos de miles, la indexación ahorra mucha memoria. Ten en cuenta que el orden de los índices importa. En el ejemplo anterior, los triángulos se crean en sentido contrario a las agujas del reloj. Si quieres cambiarlo a sentido de las agujas del reloj, ve a tu render pipeline y cambia el `front_face` a `Cw`.
 
-There are a couple of things we need to change in order to use indexing. The first is we need to create a buffer to store the indices. In `State`'s `new()` method, create the `index_buffer` after you create the `vertex_buffer`. Also, change `num_vertices` to `num_indices` and set it equal to `INDICES.len()`.
+Hay un par de cosas que necesitamos cambiar para usar la indexación. La primera es que necesitamos crear un búfer para almacenar los índices. En el método `new()` de `State`, crea el `index_buffer` después de crear el `vertex_buffer`. Además, cambia `num_vertices` a `num_indices` e establécelo igual a `INDICES.len()`.
 
 ```rust
 let vertex_buffer = device.create_buffer_init(
@@ -384,7 +384,7 @@ let index_buffer = device.create_buffer_init(
 let num_indices = INDICES.len() as u32;
 ```
 
-We don't need to implement `Pod` and `Zeroable` for our indices because `bytemuck` has already implemented them for basic types such as `u16`. That means we can just add `index_buffer` and `num_indices` to the `State` struct.
+No necesitamos implementar `Pod` y `Zeroable` para nuestros índices porque `bytemuck` ya los ha implementado para tipos básicos como `u16`. Eso significa que podemos simplemente añadir `index_buffer` y `num_indices` a la estructura `State`.
 
 ```rust
 pub struct State {
@@ -402,7 +402,7 @@ pub struct State {
 }
 ```
 
-And then populate these fields in the constructor:
+Y luego rellena estos campos en el constructor:
 
 ```rust
 Ok(Self {
@@ -420,7 +420,7 @@ Ok(Self {
 })
 ```
 
-All we have to do now is update the `render()` method to use the `index_buffer`.
+Todo lo que tenemos que hacer ahora es actualizar el método `render()` para usar el `index_buffer`.
 
 ```rust
 // render()
@@ -430,24 +430,24 @@ render_pass.set_index_buffer(self.index_buffer.slice(..), wgpu::IndexFormat::Uin
 render_pass.draw_indexed(0..self.num_indices, 0, 0..1); // 2.
 ```
 
-A couple of things to note:
+Un par de cosas a tener en cuenta:
 
-1. The method name is `set_index_buffer`, not `set_index_buffers`. You can only have one index buffer set at a time.
-2. When using an index buffer, you need to use `draw_indexed`. The `draw` method ignores the index buffer. Also, make sure you use the number of indices (`num_indices`), not vertices, as your model will either draw wrong or the method will `panic` because there are not enough indices.
+1. El nombre del método es `set_index_buffer`, no `set_index_buffers`. Solo puedes tener un búfer de índices configurado a la vez.
+2. Cuando uses un búfer de índices, necesitas usar `draw_indexed`. El método `draw` ignora el búfer de índices. Además, asegúrate de usar el número de índices (`num_indices`), no vértices, ya que tu modelo dibujará de manera incorrecta o el método entrará en `panic` porque no hay suficientes índices.
 
-With all that you should have a garishly magenta pentagon in your window.
+Con todo eso, deberías tener un pentágono magenta chillón en tu ventana.
 
 ![Magenta pentagon in window](./indexed-pentagon.png)
 
-## Color Correction
+## Corrección de Color
 
-If you use a color picker on the magenta pentagon, you'll get a hex value of #BC00BC. If you convert this to RGB values, you'll get (188, 0, 188). Dividing these values by 255 to get them into the [0, 1] range, we get roughly (0.737254902, 0, 0.737254902). This is not the same as what we are using for our vertex colors, which is (0.5, 0.0, 0.5). The reason for this has to do with color spaces.
+Si usas un selector de color en el pentágono magenta, obtendrás un valor hexadecimal de #BC00BC. Si conviertes esto a valores RGB, obtendrás (188, 0, 188). Dividiendo estos valores por 255 para obtenerlos en el rango [0, 1], obtenemos aproximadamente (0.737254902, 0, 0.737254902). Esto no es lo mismo que lo que estamos usando para nuestros colores de vértice, que es (0.5, 0.0, 0.5). La razón de esto tiene que ver con los espacios de color.
 
-Most monitors use a color space known as sRGB. Our surface is (most likely depending on what is returned from `surface.get_preferred_format()`) using an sRGB texture format. The sRGB format stores colors according to their relative brightness instead of their actual brightness. The reason for this is that our eyes don't perceive light linearly. We notice more differences in darker colors than in lighter colors.
+La mayoría de los monitores utilizan un espacio de color conocido como sRGB. Nuestra superficie es (muy probablemente dependiendo de lo que se devuelva de `surface.get_preferred_format()`) usando un formato de textura sRGB. El formato sRGB almacena colores de acuerdo a su brillo relativo en lugar de su brillo real. La razón de esto es que nuestros ojos no perciben la luz linealmente. Notamos más diferencias en colores más oscuros que en colores más claros.
 
-Most software that uses colors stores them in sRGB format (or a similar proprietary one). Wgpu expects values in linear color space, so we have to convert the values.
+La mayoría del software que usa colores los almacena en formato sRGB (o uno similar patentado). Wgpu espera valores en espacio de color lineal, así que tenemos que convertir los valores.
 
-You get the correct color using the following formula: `rgb_color = ((srgb_color / 255 + 0.055) / 1.055) ^ 2.4`. Doing this with an sRGB value of (188, 0, 188) will give us (0.5028864580325687, 0.0, 0.5028864580325687). A little off from our (0.5, 0.0, 0.5). Instead of doing a manual color conversion, you'll likely save a lot of time by using textures instead, as if they are store in an sRGB texture, the conversion to linear will happen automatically. We'll cover textures in the next lesson.
+Obtén el color correcto usando la siguiente fórmula: `rgb_color = ((srgb_color / 255 + 0.055) / 1.055) ^ 2.4`. Haciendo esto con un valor sRGB de (188, 0, 188) nos dará (0.5028864580325687, 0.0, 0.5028864580325687). Un poco diferente de nuestro (0.5, 0.0, 0.5). En lugar de hacer una conversión de color manual, probablemente ahorrarás mucho tiempo usando texturas en su lugar, ya que si se almacenan en una textura sRGB, la conversión a lineal sucederá automáticamente. Cubriremos texturas en la siguiente lección.
 
 ## Demo
 
@@ -455,5 +455,5 @@ You get the correct color using the following formula: `rgb_color = ((srgb_color
 
 <AutoGithubLink/>
 
-## Challenge
-Create a more complex shape than the one we made (aka. more than three triangles) using a vertex buffer and an index buffer. Toggle between the two with the space key.
+## Desafío
+Crea una forma más compleja que la que hicimos (es decir, más de tres triángulos) usando un búfer de vértices y un búfer de índices. Alterna entre los dos con la tecla de espacio.

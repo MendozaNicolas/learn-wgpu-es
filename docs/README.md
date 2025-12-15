@@ -1,30 +1,30 @@
-# Introduction
+# Introducción
 
-## What is wgpu?
+## ¿Qué es wgpu?
 
-[Wgpu](https://github.com/gfx-rs/wgpu) is a Rust implementation of the [WebGPU API spec](https://gpuweb.github.io/gpuweb/). WebGPU is a specification published by the GPU for the Web Community Group. It aims to allow web code access to GPU functions in a safe and reliable manner. It does this by mimicking the Vulkan API, and translating that down to whatever API the host hardware is using (ie. DirectX, Metal, Vulkan).
+[Wgpu](https://github.com/gfx-rs/wgpu) es una implementación en Rust de la [especificación de la API WebGPU](https://gpuweb.github.io/gpuweb/). WebGPU es una especificación publicada por el GPU for the Web Community Group. Su objetivo es permitir que el código web acceda a las funciones de la GPU de manera segura y confiable. Logra esto imitando la API de Vulkan y traduciéndola a la API que esté usando el hardware del host (por ejemplo, DirectX, Metal, Vulkan).
 
-Wgpu is still in development, so some of this doc is subject to change.
+Wgpu todavía está en desarrollo, por lo que parte de esta documentación está sujeta a cambios.
 
-## Why Rust?
+## ¿Por qué Rust?
 
-Wgpu actually has C bindings to allow you to write C/C++ code with it, as well as use other languages that interface with C. That being said, wgpu is written in Rust, and it has some convenient Rust bindings that don't have to jump through any hoops. On top of that, I've been enjoying writing in Rust.
+Wgpu en realidad tiene bindings de C que te permiten escribir código en C/C++, así como usar otros lenguajes que interactúan con C. Dicho esto, wgpu está escrito en Rust y tiene algunos bindings convenientes de Rust que no requieren rodeos adicionales. Además de eso, he disfrutado mucho escribir en Rust.
 
-You should be fairly familiar with Rust before using this tutorial as I won't go into much detail on Rust syntax. If you're not super comfortable with Rust you can review the [Rust tutorial](https://www.rust-lang.org/learn). You should also be familiar with [Cargo](https://doc.rust-lang.org/cargo/).
+Deberías estar bastante familiarizado con Rust antes de usar este tutorial, ya que no entraré en muchos detalles sobre la sintaxis de Rust. Si no te sientes muy cómodo con Rust, puedes revisar el [tutorial de Rust](https://www.rust-lang.org/learn). También deberías estar familiarizado con [Cargo](https://doc.rust-lang.org/cargo/).
 
-I'm using this project to learn wgpu myself, so I might miss some important details, or explain things badly. I'm always open to constructive feedback.
+Estoy usando este proyecto para aprender wgpu yo mismo, así que podría pasar por alto algunos detalles importantes o explicar las cosas mal. Siempre estoy abierto a comentarios constructivos.
 
-## Contribution and Support
+## Contribución y Soporte
 
-* I accept pull requests ([GitHub repo](https://github.com/sotrh/learn-wgpu)) for fixing issues with this tutorial such as typos, incorrect information, and other inconsistencies.
-* Due to wgpu's rapidly changing api, I'm not accepting any new pull requests for showcase demos.
-* If you want to support me directly, check out my [patreon](https://www.patreon.com/sotrh)!
+* Acepto pull requests ([repositorio de GitHub](https://github.com/sotrh/learn-wgpu)) para corregir problemas en este tutorial, como errores tipográficos, información incorrecta y otras inconsistencias.
+* Debido a la API de wgpu que cambia rápidamente, no estoy aceptando nuevos pull requests para demos de showcase.
+* Si quieres apoyarme directamente, ¡visita mi [patreon](https://www.patreon.com/sotrh)!
 
-## Translations
+## Traducciones
 
 * [中文版: 增加了与 App 的集成与调试系列章节](https://jinleili.github.io/learn-wgpu-zh/)
 
-## Special thanks to these patrons
+## Agradecimientos especiales a estos patrocinadores
 
 * David Laban
 * Bernard Llanos

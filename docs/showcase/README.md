@@ -1,3 +1,3 @@
-# Foreword
+# Prólogo
 
-The articles in this section are not meant to be tutorials. They are showcases of the various things you can do with `wgpu`. I won't go over the specifics of creating `wgpu` resources, as those will be covered elsewhere. The code for these examples is still available however and will be accessible on Github.
+Los artículos en esta sección no pretenden ser tutoriales. Son demostraciones de las diversas cosas que puedes hacer con `wgpu`. No entraré en los detalles específicos de crear recursos en `wgpu`, ya que eso se cubrirá en otro lugar. Sin embargo, el código de estos ejemplos sigue estando disponible y será accesible en Github.

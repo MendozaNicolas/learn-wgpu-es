@@ -1,9 +1,9 @@
-# The Surface
+# La Superficie
 
-## First, some housekeeping: State
+## Primero, un poco de limpieza: State
 
-We created state in the last tutorial, now let's put stuff
-in it.
+Creamos state en el tutorial anterior, ahora pongamos cosas
+en él.
 
 ```rust
 // lib.rs
@@ -18,11 +18,11 @@ pub struct State {
 }
 ```
 
-I'm glossing over `State`s fields, but they'll make more sense as I explain the code behind these methods.
+Estoy simplificando los campos de `State`, pero tendrán más sentido cuando explique el código detrás de estos métodos.
 
 ## State::new()
 
-The code for this is pretty straightforward, but let's break it down a bit.
+El código para esto es bastante directo, pero vamos a desglosarlo un poco.
 
 ```rust
 impl State {
@@ -30,7 +30,7 @@ impl State {
     async fn new(window: Arc<Window>) -> anyhow::Result<State> {
         let size = window.inner_size();
 
-        // The instance is a handle to our GPU
+        // La instancia es un manejador de nuestra GPU
         // BackendBit::PRIMARY => Vulkan + Metal + DX12 + Browser WebGPU
         let instance = wgpu::Instance::new(&wgpu::InstanceDescriptor {
             #[cfg(not(target_arch = "wasm32"))]
@@ -54,47 +54,47 @@ impl State {
     }
 ```
 
-### Instance and Adapter
+### Instance y Adapter
 
-The `instance` is the first thing you create when using wgpu. Its main purpose
-is to create `Adapter`s and `Surface`s.
+La `instance` es lo primero que creas cuando usas wgpu. Su propósito principal
+es crear `Adapter`s y `Surface`s.
 
-The `adapter` is a handle for our actual graphics card. You can use this to get information about the graphics card, such as its name and what backend the adapter uses. We use this to create our `Device` and `Queue` later. Let's discuss the fields of `RequestAdapterOptions`.
+El `adapter` es un manejador de nuestra tarjeta gráfica real. Puedes usarlo para obtener información sobre la tarjeta gráfica, como su nombre y qué backend usa el adaptador. Lo usamos para crear nuestro `Device` y `Queue` más adelante. Vamos a discutir los campos de `RequestAdapterOptions`.
 
-* `power_preference` has two variants: `LowPower` and `HighPerformance`. `LowPower` will pick an adapter that favors battery life, such as an integrated GPU. `HighPerformance` will pick an adapter for more power-hungry yet more performant GPU's, such as a dedicated graphics card. WGPU will favor `LowPower` if there is no adapter for the `HighPerformance` option.
-* The `compatible_surface` field tells wgpu to find an adapter that can present to the supplied surface.
-* The `force_fallback_adapter` forces wgpu to pick an adapter that will work on all hardware. This usually means that the rendering backend will use a "software" system instead of hardware such as a GPU.
+* `power_preference` tiene dos variantes: `LowPower` e `HighPerformance`. `LowPower` elegirá un adaptador que favorezca la duración de la batería, como una GPU integrada. `HighPerformance` elegirá un adaptador para GPUs más potentes pero que consumen más, como una tarjeta gráfica dedicada. WGPU favorecerá `LowPower` si no hay un adaptador para la opción `HighPerformance`.
+* El campo `compatible_surface` le dice a wgpu que encuentre un adaptador que pueda presentarse a la superficie suministrada.
+* El `force_fallback_adapter` obliga a wgpu a elegir un adaptador que funcionará en todo el hardware. Esto generalmente significa que el backend de renderizado usará un sistema "software" en lugar de hardware como una GPU.
 
 <div class="note">
 
-The options I've passed to `request_adapter` aren't guaranteed to work for all devices, but will work for most of them. If wgpu can't find an adapter with the required permissions, `request_adapter` will return `None`. If you want to get all adapters for a particular backend, you can use `enumerate_adapters`. This will give you an iterator that you can loop over to check if one of the adapters works for your needs.
+Las opciones que pasé a `request_adapter` no están garantizadas para funcionar en todos los dispositivos, pero funcionarán en la mayoría. Si wgpu no puede encontrar un adaptador con los permisos requeridos, `request_adapter` devolverá `None`. Si quieres obtener todos los adaptadores para un backend particular, puedes usar `enumerate_adapters`. Esto te dará un iterador que puedes recorrer para verificar si uno de los adaptadores funciona para tus necesidades.
 
 ```rust
 let adapter = instance
     .enumerate_adapters(wgpu::Backends::all())
     .filter(|adapter| {
-        // Check if this adapter supports our surface
+        // Verifica si este adaptador soporta nuestra superficie
         adapter.is_surface_supported(&surface)
     })
     .next()
     .unwrap()
 ```
 
-One thing to note is that `enumerate_adapters` isn't available on WASM, so you have to use `request_adapter`.
+Una cosa a notar es que `enumerate_adapters` no está disponible en WASM, así que tienes que usar `request_adapter`.
 
-Another thing to note is that `Adapter`s are locked to a specific backend. If you are on Windows and have two graphics cards, you'll have at least four adapters available to use: 2 Vulkan and 2 DirectX.
+Otra cosa a notar es que los `Adapter`s están bloqueados a un backend específico. Si estás en Windows y tienes dos tarjetas gráficas, tendrás al menos cuatro adaptadores disponibles para usar: 2 Vulkan y 2 DirectX.
 
-For more fields you can use to refine your search, [check out the docs](https://docs.rs/wgpu/latest/wgpu/struct.Adapter.html).
+Para más campos que puedes usar para refinar tu búsqueda, [consulta la documentación](https://docs.rs/wgpu/latest/wgpu/struct.Adapter.html).
 
 </div>
 
-### The Surface
+### La Superficie
 
-The `surface` is the part of the window that we draw to. We need it to draw directly to the screen. Our `window` needs to implement [raw-window-handle](https://crates.io/crates/raw-window-handle)'s `HasRawWindowHandle` trait to create a surface. Fortunately, winit's `Window` fits the bill. We also need it to request our `adapter`.
+La `surface` es la parte de la ventana en la que dibujamos. La necesitamos para dibujar directamente en la pantalla. Nuestra `window` necesita implementar el trait `HasRawWindowHandle` de [raw-window-handle](https://crates.io/crates/raw-window-handle) para crear una superficie. Afortunadamente, la `Window` de winit es perfecta para esto. También la necesitamos para solicitar nuestro `adapter`.
 
-### Device and Queue
+### Device y Queue
 
-Let's use the `adapter` to create the device and queue.
+Usemos el `adapter` para crear el device y la queue.
 
 ```rust
         let (device, queue) = adapter
@@ -102,8 +102,8 @@ Let's use the `adapter` to create the device and queue.
                 label: None,
                 required_features: wgpu::Features::empty(),
                 experimental_features: wgpu::ExperimentalFeatures::disabled(),
-                // WebGL doesn't support all of wgpu's features, so if
-                // we're building for the web we'll have to disable some.
+                // WebGL no soporta todas las características de wgpu, así que si
+                // estamos compilando para la web tendremos que deshabilitar algunas.
                 required_limits: if cfg!(target_arch = "wasm32") {
                     wgpu::Limits::downlevel_webgl2_defaults()
                 } else {
@@ -115,30 +115,30 @@ Let's use the `adapter` to create the device and queue.
             .await?;
 ```
 
-The `required_features` field on `DeviceDescriptor` allows us to specify what extra features we want. For this simple example, I've decided not to use any extra features.
+El campo `required_features` en `DeviceDescriptor` nos permite especificar qué características extra queremos. Para este ejemplo simple, decidí no usar ninguna característica extra.
 
 <div class="note">
 
-The graphics card you have limits the features you can use. If you want to use certain features, you may need to limit what devices you support or provide workarounds.
+La tarjeta gráfica que tienes limita las características que puedes usar. Si quieres usar ciertas características, es posible que tengas que limitar qué dispositivos soportas u ofrecer soluciones alternativas.
 
-You can get a list of features supported by your device using `adapter.features()` or `device.features()`.
+Puedes obtener una lista de características soportadas por tu dispositivo usando `adapter.features()` o `device.features()`.
 
-You can view a full list of features [here](https://docs.rs/wgpu/latest/wgpu/struct.Features.html).
+Puedes ver una lista completa de características [aquí](https://docs.rs/wgpu/latest/wgpu/struct.Features.html).
 
 </div>
 
-The `experimental_features` field specifies whether we intend to use features that
-are not stable yet. We'll leave this as disabled for now.
+El campo `experimental_features` especifica si tenemos la intención de usar características que
+aún no son estables. Dejaremos esto deshabilitado por ahora.
 
-The `required_limits` field describes the limit of certain types of resources that we can create. We'll use the defaults for this tutorial so we can support most devices. You can view a list of limits [here](https://docs.rs/wgpu/latest/wgpu/struct.Limits.html).
+El campo `required_limits` describe el límite de ciertos tipos de recursos que podemos crear. Usaremos los valores por defecto para este tutorial para que podamos soportar la mayoría de dispositivos. Puedes ver una lista de límites [aquí](https://docs.rs/wgpu/latest/wgpu/struct.Limits.html).
 
-The `memory_hints` field provides the adapter with a preferred memory allocation strategy, if supported. You can view the available options [here](https://wgpu.rs/doc/wgpu/enum.MemoryHints.html).
+El campo `memory_hints` proporciona al adaptador una estrategia de asignación de memoria preferida, si se soporta. Puedes ver las opciones disponibles [aquí](https://wgpu.rs/doc/wgpu/enum.MemoryHints.html).
 
 ```rust
         let surface_caps = surface.get_capabilities(&adapter);
-        // Shader code in this tutorial assumes an sRGB surface texture. Using a different
-        // one will result in all the colors coming out darker. If you want to support non
-        // sRGB surfaces, you'll need to account for that when drawing to the frame.
+        // El código de shader en este tutorial asume una textura de superficie sRGB. Usar una diferente
+        // resultará en que todos los colores salgan más oscuros. Si quieres soportar
+        // superficies non-sRGB, necesitarás tenerlo en cuenta al dibujar al frame.
         let surface_format = surface_caps.formats.iter()
             .find(|f| f.is_srgb())
             .copied()
@@ -155,39 +155,39 @@ The `memory_hints` field provides the adapter with a preferred memory allocation
         };
 ```
 
-Here we are defining a config for our surface. This will define how the surface creates its underlying `SurfaceTexture`s. We will talk about `SurfaceTexture` when we get to the `render` function. For now, let's talk about the config's fields.
+Aquí estamos definiendo una configuración para nuestra superficie. Esto definirá cómo la superficie crea sus `SurfaceTexture`s subyacentes. Hablaremos sobre `SurfaceTexture` cuando lleguemos a la función `render`. Por ahora, hablemos sobre los campos de la configuración.
 
-The `usage` field describes how `SurfaceTexture`s will be used. `RENDER_ATTACHMENT` specifies that the textures will be used to write to the screen (we'll talk about more `TextureUsages`s later).
+El campo `usage` describe cómo se usarán los `SurfaceTexture`s. `RENDER_ATTACHMENT` especifica que las texturas se usarán para escribir en la pantalla (hablaremos sobre más `TextureUsages` más adelante).
 
-The `format` defines how `SurfaceTexture`s will be stored on the GPU. We can get a supported format from the `SurfaceCapabilities`.
+El `format` define cómo se almacenarán los `SurfaceTexture`s en la GPU. Podemos obtener un formato soportado de las `SurfaceCapabilities`.
 
-`width` and `height` are the width and the height in pixels of a `SurfaceTexture`. This should usually be the width and the height of the window.
+`width` y `height` son el ancho y alto en píxeles de un `SurfaceTexture`. Esto generalmente debe ser el ancho y alto de la ventana.
 
 <div class="warning">
 
-Make sure that the width and height of the `SurfaceTexture` are not 0, as that can cause your app to crash.
+Asegúrate de que el ancho y alto del `SurfaceTexture` no sean 0, ya que eso puede hacer que tu aplicación falle.
 
 </div>
 
-`present_mode` uses `wgpu::PresentMode` enum, which determines how to sync the surface with the display. For the sake of simplicity, we select the first available option. If you do not want runtime selection, `PresentMode::Fifo` will cap the display rate at the display's framerate. This is essentially VSync. This mode is guaranteed to be supported on all platforms. There are other options, and you can see all of them [in the docs](https://docs.rs/wgpu/latest/wgpu/enum.PresentMode.html)
+`present_mode` usa la enumeración `wgpu::PresentMode`, que determina cómo sincronizar la superficie con la pantalla. Por simplicidad, seleccionamos la primera opción disponible. Si no quieres selección en tiempo de ejecución, `PresentMode::Fifo` limitará la velocidad de fotogramas a la velocidad de fotogramas de la pantalla. Esto es esencialmente VSync. Se garantiza que este modo sea soportado en todas las plataformas. Hay otras opciones, y puedes verlas todas [en la documentación](https://docs.rs/wgpu/latest/wgpu/enum.PresentMode.html)
 
 <div class="note">
 
-If you want to let your users pick what `PresentMode` they use, you can use [SurfaceCapabilities::present_modes](https://docs.rs/wgpu/latest/wgpu/struct.SurfaceCapabilities.html#structfield.present_modes) to get a list of all the `PresentMode`s the surface supports:
+Si quieres permitir que tus usuarios elijan qué `PresentMode` usar, puedes usar [SurfaceCapabilities::present_modes](https://docs.rs/wgpu/latest/wgpu/struct.SurfaceCapabilities.html#structfield.present_modes) para obtener una lista de todos los `PresentMode`s que la superficie soporta:
 
 ```rust
 let modes = &surface_caps.present_modes;
 ```
 
-Regardless, `PresentMode::Fifo` will always be supported, and `PresentMode::AutoVsync` and `PresentMode::AutoNoVsync` have fallback support and therefore will work on all platforms.
+De cualquier forma, `PresentMode::Fifo` siempre será soportado, y `PresentMode::AutoVsync` y `PresentMode::AutoNoVsync` tienen soporte de fallback y por lo tanto funcionarán en todas las plataformas.
 
 </div>
 
-`alpha_mode` is honestly not something I'm familiar with. I believe it has something to do with transparent windows, but feel free to open a pull request. For now, we'll just use the first `AlphaMode` in the list given by `surface_caps`.
+`alpha_mode` honestamente no es algo con lo que esté familiarizado. Creo que tiene algo que ver con ventanas transparentes, pero siéntete libre de abrir un pull request. Por ahora, usaremos el primer `AlphaMode` en la lista dada por `surface_caps`.
 
-`view_formats` is a list of `TextureFormat`s that you can use when creating `TextureView`s (we'll cover those briefly later in this tutorial as well as more in depth [in the texture tutorial](../tutorial5-textures)). As of writing, this means that if your surface is sRGB color space, you can create a texture view that uses a linear color space.
+`view_formats` es una lista de `TextureFormat`s que puedes usar cuando creas `TextureView`s (cubriremos esos brevemente más adelante en este tutorial así como en más profundidad [en el tutorial de texturas](../tutorial5-textures)). Al momento de escribir, esto significa que si tu superficie está en espacio de color sRGB, puedes crear una vista de textura que use un espacio de color lineal.
 
-Now that we've configured our surface properly, we can add these new fields at the end of the method. The `is_surface_configured` field will be used later.
+Ahora que hemos configurado nuestra superficie correctamente, podemos agregar estos nuevos campos al final del método. El campo `is_surface_configured` se usará más adelante.
 
 ```rust
     async fn new(window: Arc<Window>) -> anyhow::Result<State> {
@@ -206,7 +206,7 @@ Now that we've configured our surface properly, we can add these new fields at t
 
 ## resize()
 
-If we want to support resizing in our application, we're going to need to reconfigure the `surface` every time the window's size changes. That's the reason we stored the physical `size` and the `config` used to configure the `surface`. With all of these, the resize method is very simple.
+Si queremos soportar el redimensionamiento en nuestra aplicación, vamos a necesitar reconfigurar la `surface` cada vez que cambie el tamaño de la ventana. Esa es la razón por la cual almacenamos el `size` físico y la `config` usada para configurar la `surface`. Con todo esto, el método resize es muy simple.
 
 ```rust
 // impl State
@@ -220,11 +220,11 @@ pub fn resize(&mut self, width: u32, height: u32) {
 }
 ```
 
-This is where we configure the `surface`. We need the surface to be configured before we can do anything with it. We set the `is_surface_configured` flag to true here and we'll check it in the `render()` function.
+Aquí es donde configuramos la `surface`. Necesitamos que la superficie esté configurada antes de poder hacer nada con ella. Establecemos el indicador `is_surface_configured` a true aquí y lo verificaremos en la función `render()`.
 
 ## handle_key()
 
-This is where we'll handle keyboard events. Currently just want to exit the app when the escape key is pressed. We'll do some other stuff later.
+Aquí es donde manejaremos los eventos de teclado. Actualmente solo queremos salir de la aplicación cuando se presione la tecla Escape. Haremos otras cosas más adelante.
 
 ```rust
 // impl State
@@ -236,7 +236,7 @@ fn handle_key(&self, event_loop: &ActiveEventLoop, code: KeyCode, is_pressed: bo
 }
 ```
 
-We'll need to call our new `handle_key()` function in the `window_event()` function in `App`.
+Necesitaremos llamar a nuestra nueva función `handle_key()` en la función `window_event()` en `App`.
 
 ```rust
 impl ApplicationHandler<State> for App {
@@ -272,19 +272,19 @@ impl ApplicationHandler<State> for App {
 
 ## update()
 
-We don't have anything to update yet, so leave the method empty.
+No tenemos nada que actualizar aún, así que dejamos el método vacío.
 
 ```rust
 fn update(&mut self) {
-    // remove `todo!()`
+    // elimina `todo!()`
 }
 ```
 
-We'll add some code here later on to move around objects.
+Agregaremos código aquí más adelante para mover objetos alrededor.
 
 ## render()
 
-Here's where the magic happens. First, we need to get a frame to render to.
+Aquí es donde ocurre la magia. Primero, necesitamos obtener un frame para renderizar.
 
 ```rust
 // impl State
@@ -292,23 +292,23 @@ Here's where the magic happens. First, we need to get a frame to render to.
 fn render(&mut self) -> Result<(), wgpu::SurfaceError> {
     self.window.request_redraw();
 
-    // We can't render unless the surface is configured
+    // No podemos renderizar a menos que la superficie esté configurada
     if !self.is_surface_configured {
         return Ok(());
     }
-        
+
     let output = self.surface.get_current_texture()?;
 ```
 
-The `get_current_texture` function will wait for the `surface` to provide a new `SurfaceTexture` that we will render to. We'll store this in `output` for later.
+La función `get_current_texture` esperará a que la `surface` proporcione un nuevo `SurfaceTexture` que renderizaremos. Almacenaremos esto en `output` para más adelante.
 
 ```rust
     let view = output.texture.create_view(&wgpu::TextureViewDescriptor::default());
 ```
 
-This line creates a `TextureView` with default settings. We need to do this because we want to control how the render code interacts with the texture.
+Esta línea crea una `TextureView` con configuración por defecto. Necesitamos hacer esto porque queremos controlar cómo el código de renderizado interactúa con la textura.
 
-We also need to create a `CommandEncoder` to create the actual commands to send to the GPU. Most modern graphics frameworks expect commands to be stored in a command buffer before being sent to the GPU. The `encoder` builds a command buffer that we can then send to the GPU.
+También necesitamos crear un `CommandEncoder` para crear los comandos reales a enviar a la GPU. La mayoría de los frameworks gráficos modernos esperan que los comandos se almacenen en un buffer de comandos antes de ser enviados a la GPU. El `encoder` construye un buffer de comandos que luego podemos enviar a la GPU.
 
 ```rust
     let mut encoder = self.device.create_command_encoder(&wgpu::CommandEncoderDescriptor {
@@ -316,7 +316,7 @@ We also need to create a `CommandEncoder` to create the actual commands to send 
     });
 ```
 
-Now we can get to clearing the screen (a long time coming). We need to use the `encoder` to create a `RenderPass`. The `RenderPass` has all the methods for the actual drawing. The code for creating a `RenderPass` is a bit nested, so I'll copy it all here before talking about its pieces.
+Ahora podemos proceder a limpiar la pantalla (algo que ha tardado mucho en llegar). Necesitamos usar el `encoder` para crear un `RenderPass`. El `RenderPass` tiene todos los métodos para el dibujo real. El código para crear un `RenderPass` está un poco anidado, así que lo copiaré aquí antes de hablar sobre sus partes.
 
 ```rust
     {
@@ -349,11 +349,11 @@ Now we can get to clearing the screen (a long time coming). We need to use the `
 }
 ```
 
-First things first, let's talk about the extra block (`{}`) around `encoder.begin_render_pass(...)`. `begin_render_pass()` borrows `encoder` mutably (aka `&mut self`). We can't call `encoder.finish()` until we release that mutable borrow. The block tells Rust to drop any variables within it when the code leaves that scope, thus releasing the mutable borrow on `encoder` and allowing us to `finish()` it. If you don't like the `{}`, you can also use `drop(render_pass)` to achieve the same effect.
+Lo primero es lo primero, hablemos sobre el bloque extra (`{}`) alrededor de `encoder.begin_render_pass(...)`. `begin_render_pass()` toma prestado `encoder` de forma mutable (es decir, `&mut self`). No podemos llamar a `encoder.finish()` hasta que liberemos ese préstamo mutable. El bloque le dice a Rust que elimine cualquier variable dentro de él cuando el código sale de ese ámbito, liberando así el préstamo mutable en `encoder` y permitiéndonos hacer `finish()`. Si no te gusta el `{}`, también puedes usar `drop(render_pass)` para lograr el mismo efecto.
 
-The last lines of the code tell `wgpu` to finish the command buffer and submit it to the GPU's render queue.
+Las últimas líneas del código le dicen a `wgpu` que termine el buffer de comandos y lo envíe a la cola de renderizado de la GPU.
 
-We need to update the event loop again to call this method. We'll also call `update()` before it, too.
+Necesitamos actualizar el event loop nuevamente para llamar a este método. También llamaremos a `update()` antes de él.
 
 ```rust
 // run()
@@ -374,7 +374,7 @@ We need to update the event loop again to call this method. We'll also call `upd
                 state.update();
                 match state.render() {
                     Ok(_) => {}
-                    // Reconfigure the surface if it's lost or outdated
+                    // Reconfigura la superficie si está perdida u obsoleta
                     Err(wgpu::SurfaceError::Lost | wgpu::SurfaceError::Outdated) => {
                         let size = state.window.inner_size();
                         state.resize(size.width, size.height);
@@ -389,13 +389,13 @@ We need to update the event loop again to call this method. We'll also call `upd
     }
 ```
 
-With all that, you should be getting something that looks like this.
+Con todo eso, deberías obtener algo que se vea así.
 
-![Window with a blue background](./cleared-window.png)
+![Ventana con fondo azul](./cleared-window.png)
 
-## Wait, what's going on with RenderPassDescriptor?
+## Espera, ¿qué está sucediendo con RenderPassDescriptor?
 
-Some of you may be able to tell what's going on just by looking at it, but I'd be remiss if I didn't go over it. Let's take a look at the code again.
+Algunos de ustedes podrían ser capaces de decir qué está sucediendo solo mirándolo, pero sería negligente si no lo revisara. Echemos un vistazo al código nuevamente.
 
 ```rust
 &wgpu::RenderPassDescriptor {
@@ -407,15 +407,15 @@ Some of you may be able to tell what's going on just by looking at it, but I'd b
 }
 ```
 
-A `RenderPassDescriptor` only has three fields: `label`, `color_attachments` and `depth_stencil_attachment`. The `color_attachments` describe where we are going to draw our color to. We use the `TextureView` we created earlier to make sure that we render to the screen.
+Un `RenderPassDescriptor` solo tiene tres campos: `label`, `color_attachments` y `depth_stencil_attachment`. Los `color_attachments` describen dónde vamos a dibujar nuestro color. Usamos la `TextureView` que creamos anteriormente para asegurarnos de que renderizamos a la pantalla.
 
 <div class="note">
 
-The `color_attachments` field is a "sparse" array. This allows you to use a pipeline that expects multiple render targets and only supplies the ones you care about.
+El campo `color_attachments` es un arreglo "sparse". Esto te permite usar un pipeline que espera múltiples render targets y solo suministrar los que te importan.
 
 </div>
 
-We'll use `depth_stencil_attachment` later, but we'll set it to `None` for now.
+Usaremos `depth_stencil_attachment` más adelante, pero lo estableceremos en `None` por ahora.
 
 ```rust
 Some(wgpu::RenderPassColorAttachment {
@@ -433,23 +433,23 @@ Some(wgpu::RenderPassColorAttachment {
 })
 ```
 
-The `RenderPassColorAttachment` has the `view` field, which informs `wgpu` what texture to save the colors to. In this case, we specify the `view` that we created using `surface.get_current_texture()`. This means that any colors we draw to this attachment will get drawn to the screen.
+El `RenderPassColorAttachment` tiene el campo `view`, que informa a `wgpu` qué textura usar para guardar los colores. En este caso, especificamos la `view` que creamos usando `surface.get_current_texture()`. Esto significa que cualquier color que dibujemos en este attachment será dibujado en la pantalla.
 
-The `resolve_target` is the texture that will receive the resolved output. This will be the same as `view` unless multisampling is enabled. We don't need to specify this, so we leave it as `None`.
+El `resolve_target` es la textura que recibirá la salida resuelta. Será lo mismo que `view` a menos que el multisampling esté habilitado. No necesitamos especificar esto, así que lo dejamos en `None`.
 
-The `ops` field takes a `wgpu::Operations` object. This tells wgpu what to do with the colors on the screen (specified by `view`). The `load` field tells wgpu how to handle colors stored from the previous frame. Currently, we are clearing the screen with a bluish color. The `store` field tells wgpu whether we want to store the rendered results to the `Texture` behind our `TextureView` (in this case, it's the `SurfaceTexture`). We use `StoreOp::Store` as we do want to store our render results.
+El campo `ops` toma un objeto `wgpu::Operations`. Esto le dice a wgpu qué hacer con los colores en la pantalla (especificados por `view`). El campo `load` le dice a wgpu cómo manejar los colores almacenados del frame anterior. Actualmente, estamos limpiando la pantalla con un color azulado. El campo `store` le dice a wgpu si queremos almacenar los resultados renderizados en la `Texture` detrás de nuestra `TextureView` (en este caso, es el `SurfaceTexture`). Usamos `StoreOp::Store` porque queremos almacenar nuestros resultados de renderizado.
 
 <div class="note">
 
-It's not uncommon to not clear the screen if the screen is going to be completely covered up with objects. If your scene doesn't cover the entire screen, however, you can end up with something like this.
+No es raro no limpiar la pantalla si la pantalla va a estar completamente cubierta por objetos. Sin embargo, si tu escena no cubre toda la pantalla, puedes terminar con algo como esto.
 
 ![./no-clear.png](./no-clear.png)
 
 </div>
 
-## Validation Errors?
+## Errores de validación?
 
-If wgpu is using Vulkan on your machine, you may run into validation errors if you are running an older version of the Vulkan SDK. You should be using at least version `1.2.182` as older versions can give out some false positives. If errors persist, you may have encountered a bug in wgpu. You can post an issue at [https://github.com/gfx-rs/wgpu](https://github.com/gfx-rs/wgpu)
+Si wgpu está usando Vulkan en tu máquina, es posible que encuentres errores de validación si estás ejecutando una versión anterior del SDK de Vulkan. Deberías estar usando al menos la versión `1.2.182` ya que las versiones antiguas pueden generar algunos falsos positivos. Si los errores persisten, es posible que hayas encontrado un bug en wgpu. Puedes publicar un issue en [https://github.com/gfx-rs/wgpu](https://github.com/gfx-rs/wgpu)
 
 ## Demo
 
@@ -457,6 +457,6 @@ If wgpu is using Vulkan on your machine, you may run into validation errors if y
 
 <AutoGithubLink/>
 
-## Challenge
+## Desafío
 
-Create a `handle_mouse_moved()` method to capture mouse events, and update the clear color using that. *Hint: you'll probably need to use `WindowEvent::CursorMoved`*.
+Crea un método `handle_mouse_moved()` para capturar eventos del ratón, y actualiza el color de limpieza usando eso. *Pista: probablemente necesitarás usar `WindowEvent::CursorMoved`*.

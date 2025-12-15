@@ -1,6 +1,6 @@
-# Compute Example: Tangents and Bitangents
+# Ejemplo de Compute: Tangentes y Bitangentes
 
-This proved more difficult than I anticipated. The first problem I encountered was some vertex data corruption due to the shader reading my vertex data incorrectly. I was using the `ModelVertex` struct I used in the [normal mapping tutorial](/intermediate/tutorial11-normals/).
+Esto resultó ser más difícil de lo que anticipé. El primer problema que encontré fue cierta corrupción de datos de vértices debido a que el shader estaba leyendo mis datos de vértices incorrectamente. Estaba usando la estructura `ModelVertex` que usé en el [tutorial de mapeo de normales](/intermediate/tutorial11-normals/).
 
 ```rust
 #[repr(C)]
@@ -14,7 +14,7 @@ pub struct ModelVertex {
 }
 ```
 
-This structure works perfectly fine when used as a vertex buffer. Using it as a storage buffer proved less convenient. My previous code used a GLSL struct similar to my `ModelVertex`.
+Esta estructura funciona perfectamente cuando se usa como búfer de vértices. Usarla como búfer de almacenamiento resultó ser menos conveniente. Mi código anterior usaba una estructura GLSL similar a mi `ModelVertex`.
 
 ```glsl
 struct ModelVertex {
@@ -26,11 +26,11 @@ struct ModelVertex {
 };
 ```
 
-At first glance, this seems just fine, but OpenGL experts would likely see a problem with the structure. Our fields aren't aligned properly to support the `std430` alignment that storage buffers require. I won't get into detail but you can check out the [alignment showcase](../alignment) if you want to know more. To summarize, the `vec2` for the `tex_coords` was messing up the byte alignment, corrupting the vertex data resulting in the following:
+A primera vista, esto parece estar bien, pero los expertos en OpenGL probablemente verían un problema con la estructura. Nuestros campos no están alineados correctamente para soportar la alineación `std430` que requieren los búferes de almacenamiento. No entraré en detalle, pero puedes revisar la [demostración de alineación](../alignment) si quieres saber más. Para resumir, el `vec2` para `tex_coords` estaba arruinando la alineación de bytes, corrompiendo los datos de vértices resultando en lo siguiente:
 
 ![./corruption.png](./corruption.png)
 
-I could have fixed this by adding a padding field after `tex_coords` on the Rust side, but that would require modifying the `VertexBufferLayout`. I ended up solving this problem by using the components of the vectors directly which resulted in a struct like this:
+Podría haber arreglado esto agregando un campo de relleno después de `tex_coords` en el lado de Rust, pero eso requeriría modificar el `VertexBufferLayout`. Terminé resolviendo este problema utilizando los componentes de los vectores directamente, lo que resultó en una estructura como esta:
 
 ```glsl
 struct ModelVertex {
@@ -42,17 +42,17 @@ struct ModelVertex {
 };
 ```
 
-Since `std430` will use the alignment of the largest element of the struct, using all floats means the struct will be aligned to 4 bytes. This is alignment matches what `ModelVertex` uses in Rust. This was kind of a pain to work with, but it fixed the corruption issue.
+Dado que `std430` usará la alineación del elemento más grande de la estructura, usar todos los flotantes significa que la estructura se alineará a 4 bytes. Esta alineación coincide con la que `ModelVertex` usa en Rust. Fue un poco incómodo trabajar con esto, pero arregló el problema de corrupción.
 
-The second problem required me to rethink how I was computing the tangent and bitangent. The previous algorithm I was using only computed the tangent and bitangent for each triangle and set all the vertices in that triangle to use the same tangent and bitangent. While this is fine in a single-threaded context, the code breaks down when trying to compute the triangles in parallel. The reason is that multiple triangles can share the same vertices. This means that when we go to save the resulting tangents, we inevitably end up trying to write to the same vertex from multiple different threads which is a big no no. You can see the issue with this method below:
+El segundo problema me requirió replantear cómo estaba calculando la tangente y bitangente. El algoritmo anterior que estaba usando solo calculaba la tangente y bitangente para cada triángulo y configuraba todos los vértices en ese triángulo para usar la misma tangente y bitangente. Aunque esto está bien en un contexto de un solo hilo, el código se desmorona cuando se intenta calcular los triángulos en paralelo. La razón es que múltiples triángulos pueden compartir los mismos vértices. Esto significa que cuando vamos a guardar las tangentes resultantes, inevitablemente terminamos intentando escribir en el mismo vértice desde múltiples hilos diferentes, lo cual no está permitido. Puedes ver el problema con este método a continuación:
 
 ![./black_triangles.png](./black_triangles.png)
 
-Those black triangles were the result of multiple GPU threads trying to modify the same vertices. Looking at the data in Render Doc I could see that the tangents and bitangents were garbage numbers such as `NaN`.
+Esos triángulos negros fueron el resultado de múltiples hilos de GPU intentando modificar los mismos vértices. Observando los datos en Render Doc pude ver que las tangentes y bitangentes eran números basura como `NaN`.
 
 ![./render_doc_output.png](./render_doc_output.png)
 
-While on the CPU we could introduce a synchronization primitive such as a `Mutex` to fix this issue, AFAIK there isn't really such a thing on the GPU. Instead, I decided to swap my code to work with each vertex individually. There are some hurdles with that, but those will be easier to explain in code. Let's start with the `main` function.
+Mientras que en la CPU podríamos introducir una primitiva de sincronización como un `Mutex` para arreglar este problema, que sepa no existe realmente algo así en la GPU. En su lugar, decidí modificar mi código para trabajar con cada vértice individualmente. Hay algunos obstáculos con eso, pero serán más fáciles de explicar en código. Comencemos con la función `main`.
 
 ```glsl
 void main() {
@@ -62,7 +62,7 @@ void main() {
 }
 ```
 
-We use the `gl_GlobalInvocationID.x` to get the index of the vertex we want to compute the tangents for. I opted to put the actual calculation into its own method. Let's take a look at that.
+Usamos `gl_GlobalInvocationID.x` para obtener el índice del vértice para el cual queremos calcular las tangentes. Opté por poner el cálculo actual en su propio método. Veamos eso.
 
 ```glsl
 ModelVertex calcTangentBitangent(uint vertexIndex) {
@@ -102,10 +102,10 @@ ModelVertex calcTangentBitangent(uint vertexIndex) {
 
             float r = 1.0 / (delta_uv1.x * delta_uv2.y - delta_uv1.y * delta_uv2.x);
             tangent += (delta_pos1 * delta_uv2.y - delta_pos2 * delta_uv1.y) * r;
-            bitangent += (delta_pos2 * delta_uv1.x - delta_pos1 * delta_uv2.x) * r; 
+            bitangent += (delta_pos2 * delta_uv1.x - delta_pos1 * delta_uv2.x) * r;
             trianglesIncluded += 1;
         }
-        
+
     }
 
     // Average the tangent and bitangents
@@ -128,11 +128,11 @@ ModelVertex calcTangentBitangent(uint vertexIndex) {
 }
 ```
 
-## Possible Improvements
+## Posibles Mejoras
 
-Looping over every triangle for every vertex is likely raising some red flags for some of you. In a single-threaded context, this algorithm would end up being O(N*M). As we are utilizing the high number of threads available to our GPU, this is less of an issue, but it still means our GPU is burning more cycles than it needs to.
+Hacer un bucle sobre cada triángulo para cada vértice probablemente levante algunas banderas rojas para algunos de ustedes. En un contexto de un solo hilo, este algoritmo terminaría siendo O(N*M). Como estamos utilizando el alto número de hilos disponibles en nuestra GPU, esto es menos problemático, pero aún significa que nuestra GPU está quemando más ciclos de los que necesita.
 
-One way I came up with to possibly improve performance is to store the index of each triangle in a hash map like structure with the vertex index as keys. Here's some pseudo code:
+Una forma en que se me ocurrió posiblemente mejorar el rendimiento es almacenar el índice de cada triángulo en una estructura como un mapa hash con el índice del vértice como claves. Aquí hay un pseudocódigo:
 
 ```rust
 for t in 0..indices.len() / 3 {
@@ -142,11 +142,11 @@ for t in 0..indices.len() / 3 {
 }
 ```
 
-We'd then need to flatten this structure to pass it to the GPU. We'd also need a second array to index the first.
+Luego necesitaríamos aplanar esta estructura para pasarla a la GPU. También necesitaríamos un segundo arreglo para indexar el primero.
 
 ```rust
 for (i, (_v, t_list)) in triangle_map.iter().enumerate() {
-    triangle_map_indices.push(TriangleMapIndex { 
+    triangle_map_indices.push(TriangleMapIndex {
         start: i,
         len: t_list.len(),
     });
@@ -154,11 +154,11 @@ for (i, (_v, t_list)) in triangle_map.iter().enumerate() {
 }
 ```
 
-I ultimately decided against this method as it was more complicated, and I haven't had time to benchmark it to see if it's faster than the simple method.
+Finalmente decidí en contra de este método ya que era más complicado y no he tenido tiempo para comparar si es más rápido que el método simple.
 
-## Results
+## Resultados
 
-The tangents and bitangents are now getting calculated correctly and on the GPU!
+Las tangentes y bitangentes ahora se calculan correctamente en la GPU.
 
 ![./results.png](./results.png)
 
